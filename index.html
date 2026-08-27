@@ -117,13 +117,15 @@
       color: #0369a1;
     }
 
+    /* Heatmap styling */
     .heatmap-wrapper { overflow-x: auto; margin-top: 1rem; }
-    .heatmap-table { border-collapse: separate; border-spacing: 3px; width: 100%; }
-    .heatmap-table th, .heatmap-table td { padding: 0.6rem 0.4rem; text-align: center; font-size: 0.8rem; border: none; }
-    .heatmap-table th { background: #f8fafc; font-weight: 600; min-width: 100px; }
+    .heatmap-table { border-collapse: separate; border-spacing: 3px; width: auto; margin: 0 auto; }
+    .heatmap-table th, .heatmap-table td { padding: 0.6rem 0.5rem; text-align: center; font-size: 0.8rem; border: none; }
+    .heatmap-table th { background: #f8fafc; font-weight: 600; min-width: 90px; }
     .heatmap-table th.sortable-hm { cursor: pointer; }
     .heatmap-table th.sortable-hm:hover { background: #e2e8f0; }
-    .heatmap-cell { border-radius: 4px; font-weight: 700; cursor: pointer; }
+    .heatmap-cell { border-radius: 4px; font-weight: 700; min-width: 60px; height: 38px; }
+    .heatmap-empty { background: transparent !important; }
 
     .chart-container-grid {
       display: grid;
@@ -133,6 +135,86 @@
     @media (max-width: 900px) {
       .chart-container-grid { grid-template-columns: 1fr; }
     }
+
+    /* Styles pour les filtres chips & cartes scrutins */
+    .filter-chips-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .filter-chip-btn {
+      padding: 0.4rem 0.85rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      background: #f1f5f9;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+    .filter-chip-btn:hover {
+      background: #e2e8f0;
+    }
+    .filter-chip-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      font-weight: 600;
+    }
+
+    .scrutins-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .vote-item-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .vote-item-card.pour-pour { border-left: 4px solid var(--pour-color); }
+    .vote-item-card.contre-contre { border-left: 4px solid var(--contre-color); }
+    .vote-item-card.desaccord { border-left: 4px solid var(--diff-color); }
+
+    .vote-tag-badge {
+      display: inline-block;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+    }
+    .vote-tag-badge.pour { background: var(--pour-bg); color: var(--pour-color); }
+    .vote-tag-badge.contre { background: var(--contre-bg); color: var(--contre-color); }
+    .vote-tag-badge.abstention { background: #fef3c7; color: #b45309; }
+    
+    .outcome-badge {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+  }
+  .outcome-badge.adopte {
+    background: var(--pour-bg);
+    color: var(--pour-color);
+    border: 1px solid rgba(22, 163, 74, 0.25);
+  }
+  .outcome-badge.rejete {
+    background: var(--contre-bg);
+    color: var(--contre-color);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+  }
   </style>
 </head>
 <body>
@@ -140,11 +222,12 @@
   <h1>Observatoire des Votes Parlementaires</h1>
   <p class="subtitle" id="global-kpi">Chargement des données...</p>
 
-  <nav class="tabs-nav">
+<nav class="tabs-nav">
     <button class="tab-btn active" onclick="switchTab('tab-overview')">Vue d'ensemble par Groupe</button>
     <button class="tab-btn" onclick="switchTab('tab-heatmap')">Matrice Globale (Heatmap)</button>
     <button class="tab-btn" onclick="switchTab('tab-radar-time')">Analyses Thématiques & Temporelles</button>
     <button class="tab-btn" onclick="switchTab('tab-detailed')">Explorateur Scrutin par Scrutin</button>
+    <button class="tab-btn" onclick="switchTab('tab-about')">ℹ️ À propos & Méthodologie</button>
   </nav>
 
   <!-- ONGLET 1 : VUE D'ENSEMBLE -->
@@ -189,7 +272,7 @@
     </div>
   </div>
 
-  <!-- ONGLET 2 : HEATMAP -->
+  <!-- ONGLET 2 : HEATMAP (Triangle inférieur) -->
   <div id="tab-heatmap" class="tab-content">
     <div class="card">
       <div class="filters-grid" style="max-width: 600px;">
@@ -249,35 +332,103 @@
     </div>
   </div>
 
-  <!-- ONGLET 4 : EXPLORATEUR DÉTAILLÉ -->
-  <div id="tab-detailed" class="tab-content">
-    <div class="card">
-      <div class="filters-grid">
-        <div class="filter-item">
-          <label for="dtGroupA">Groupe 1</label>
-          <select id="dtGroupA" onchange="renderDetailed()"></select>
-        </div>
-        <div class="filter-item">
-          <label for="dtGroupB">Groupe 2</label>
-          <select id="dtGroupB" onchange="renderDetailed()"></select>
-        </div>
-        <div class="filter-item">
-          <label for="dtRelation">Type d'accord</label>
-          <select id="dtRelation" onchange="renderDetailed()">
-            <option value="ALL">Tous les scrutins</option>
-            <option value="POUR_POUR">Uniquement POUR / POUR</option>
-            <option value="CONTRE_CONTRE">Uniquement CONTRE / CONTRE</option>
-            <option value="DESACCORD">Uniquement Désaccords</option>
-          </select>
-        </div>
-        <div class="filter-item">
-          <label for="dtSearch">Recherche</label>
-          <input type="text" id="dtSearch" placeholder="Rechercher..." oninput="renderDetailed()">
-        </div>
+<!-- ONGLET 4 : EXPLORATEUR DÉTAILLÉ -->
+<div id="tab-detailed" class="tab-content">
+  <div class="card">
+    <div class="filters-grid">
+      <div class="filter-item">
+        <label for="dtGroupA">Groupe 1</label>
+        <select id="dtGroupA" onchange="renderDetailed()"></select>
       </div>
-      <div id="dtScrutinsContainer"></div>
+      <div class="filter-item">
+        <label for="dtGroupB">Groupe 2</label>
+        <select id="dtGroupB" onchange="renderDetailed()"></select>
+      </div>
+      <div class="filter-item">
+        <label for="dtRelation">Type d'accord</label>
+        <select id="dtRelation" onchange="renderDetailed()">
+          <option value="ALL">Tous les scrutins</option>
+          <option value="POUR_POUR">Uniquement POUR / POUR</option>
+          <option value="CONTRE_CONTRE">Uniquement CONTRE / CONTRE</option>
+          <option value="DESACCORD">Uniquement Désaccords</option>
+        </select>
+      </div>
+
+      <!-- AJOUT ICI : Filtre par issue du vote -->
+      <div class="filter-item">
+        <label for="dtOutcome">Issue du scrutin</label>
+        <select id="dtOutcome" onchange="renderDetailed()">
+          <option value="ALL">Toutes les issues</option>
+          <option value="adopte">Adopté uniquement</option>
+          <option value="rejete">Rejeté uniquement</option>
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label for="dtSearch">Recherche textuelle</label>
+        <input type="text" id="dtSearch" placeholder="Rechercher un mot-clé..." oninput="renderDetailed()">
+      </div>
+    </div>
+
+      <!-- Boutons filtres prédéfinis -->
+      <div class="filter-chips-container">
+        <label style="margin-right: 0.25rem;">Filtres rapides :</label>
+        <button class="filter-chip-btn active" onclick="applyPresetFilter('ALL', this)">Tous</button>
+        <button class="filter-chip-btn" onclick="applyPresetFilter('ensemble du projet', this)">Ensemble du projet</button>
+        <button class="filter-chip-btn" onclick="applyPresetFilter('l\'article premier', this)">Article premier</button>
+        <button class="filter-chip-btn" onclick="applyPresetFilter('l\'amendement', this)">Amendement</button>
+        <button class="filter-chip-btn" onclick="applyPresetFilter('le sous-amendement', this)">Sous-amendement</button>
+      </div>
+
+      <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;" id="dtCountLabel"></p>
+      <div class="scrutins-list" id="dtScrutinsContainer"></div>
     </div>
   </div>
+
+<!-- ONGLET 5 : À PROPOS / INFORMATIONS -->
+  <div id="tab-about" class="tab-content">
+    <div class="card" style="line-height: 1.7; font-size: 0.95rem; color: #334155;">
+      <h2 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: #0f172a;">Objectif de l'Observatoire</h2>
+      <p style="margin-bottom: 1.25rem;">
+        Cet outil interactif propose une analyse factuelle et transparente de l'activité législative à l'Assemblée nationale. Il permet d'étudier les proximités de vote, les logiques d'alliances et la cohésion interne des groupes parlementaires à partir des scrutins publics solennels et ordinaires.
+      </p>
+
+      <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.25rem 0;">
+
+      <h2 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: #0f172a;">Sources des données</h2>
+      <ul style="margin-left: 1.25rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem;">
+        <li><strong>Open Data de l'Assemblée nationale :</strong> ensemble des données officielles brutes issues des exports JSON (scrutins publics et dossiers législatifs).</li>
+        <li><strong>Périmètre :</strong> 16ᵉ et 17ᵉ législatures de la Vᵉ République.</li>
+        <li><strong>Actualisation :</strong> données consolidées et enrichies pour cartographier les positions majoritaires de chaque groupe.</li>
+      </ul>
+
+      <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.25rem 0;">
+
+      <h2 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: #0f172a;">Méthodologie de calcul</h2>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <p>
+          • <strong>Position majoritaire d'un groupe :</strong> pour chaque scrutin, la position officielle retenue (POUR, CONTRE ou ABSTENTION) correspond au vote exprimé par la majorité absolue des députés votants du groupe. Les groupes avec moins de 3 votants sur un texte sont exclus du calcul pour préserver la représentativité statistique.
+        </p>
+        <p>
+          • <strong>Taux de cohésion :</strong> pourcentage de députés du groupe ayant suivi la consigne majoritaire lors du scrutin. Un taux de 100 % indique une unanimité parfaite.
+        </p>
+        <p>
+          • <strong>Adhésion positive vs Accord global :</strong>
+          <br>— <em>Adhésion positive (Pour / Pour) :</em> mesure les textes sur lesquels deux groupes s'accordent explicitement pour voter favorablement ensemble.
+          <br>— <em>Accord global (Pour + Contre) :</em> inclut également les rejets conjoints (opposition commune).
+        </p>
+      </div>
+
+      <div style="margin-top: 1.5rem; padding: 0.85rem 1rem; background: #f1f5f9; border-left: 4px solid var(--primary); border-radius: 4px; font-size: 0.85rem; color: #475569;">
+        <strong>Note de neutralité :</strong> Cet observatoire est un projet indépendant d'analyse de données publiques. Il ne porte aucun jugement de valeur politique et s'appuie strictement sur les décomptes officiels de l'hémicycle.
+      </div>
+      <p style="margin-bottom: 1.25rem;">
+        Site HTML et script python pour extraction de données fait par Gemini Flash 3.7
+      </p>
+      <!-- Fait par L.M et publié à l'origine sur https://louloume78.github.io/VersusPolitique/ --> 
+    </div>
+  </div>
+
 
   <script>
     const POLITICAL_SPECTRUM = [
@@ -291,6 +442,7 @@
     let allCommissions = new Set();
     let currentOvSort = "spectrum";
     let currentHmSortCol = null;
+    let currentPresetFilter = "ALL";
     let radarInstance = null;
     let timelineInstance = null;
 
@@ -432,55 +584,67 @@
       });
     }
 
-    function renderHeatmap() {
-      const dateRange = document.getElementById('hmDateRange').value;
-      const metric = document.getElementById('hmMetric').value;
-      const filtered = filterDataset(dateRange);
-      const activeGroups = POLITICAL_SPECTRUM.filter(g => filtered.some(s => s.positions && s.positions[g]));
+    function sortHeatmapByCol(groupName) {
+    currentHmSortCol = (currentHmSortCol === groupName) ? null : groupName;
+    renderHeatmap();
+    }
 
-      const matrix = {};
-      activeGroups.forEach(g1 => {
+    function renderHeatmap() {
+    const dateRange = document.getElementById('hmDateRange').value;
+    const metric = document.getElementById('hmMetric').value;
+    const filtered = filterDataset(dateRange);
+    const activeGroups = POLITICAL_SPECTRUM.filter(g => filtered.some(s => s.positions && s.positions[g]));
+
+    const matrix = {};
+    activeGroups.forEach(g1 => {
         matrix[g1] = {};
         activeGroups.forEach(g2 => { matrix[g1][g2] = { pour: 0, contre: 0, total: 0 }; });
-      });
+    });
 
-      filtered.forEach(s => {
+    filtered.forEach(s => {
         const p = s.positions;
         const present = Object.keys(p).filter(k => activeGroups.includes(k));
         for (let i = 0; i < present.length; i++) {
-          for (let j = 0; j < present.length; j++) {
+        for (let j = 0; j < present.length; j++) {
             const g1 = present[i], g2 = present[j];
             matrix[g1][g2].total++;
             if (p[g1] === 'POUR' && p[g2] === 'POUR') matrix[g1][g2].pour++;
             if (p[g1] === 'CONTRE' && p[g2] === 'CONTRE') matrix[g1][g2].contre++;
-          }
         }
-      });
+        }
+    });
 
-      let rowGroups = [...activeGroups];
-      if (currentHmSortCol && matrix[currentHmSortCol]) {
+    let rowGroups = [...activeGroups];
+    if (currentHmSortCol && matrix[currentHmSortCol]) {
         rowGroups.sort((a, b) => getCellVal(matrix[b][currentHmSortCol], metric) - getCellVal(matrix[a][currentHmSortCol], metric));
-      }
+    }
 
-      let html = '<table class="heatmap-table"><thead><tr><th></th>';
-      activeGroups.forEach(g => {
-        html += `<th class="sortable-hm" onclick="sortHeatmapByCol('${g}')">${g}</th>`;
-      });
-      html += '</tr></thead><tbody>';
+    let html = '<table class="heatmap-table"><thead><tr><th></th>';
+    activeGroups.forEach(g => {
+        const isSorted = (currentHmSortCol === g) ? ' 🔽' : '';
+        html += `<th class="sortable-hm" onclick="sortHeatmapByCol('${g}')">${g}${isSorted}</th>`;
+    });
+    html += '</tr></thead><tbody>';
 
-      rowGroups.forEach(g1 => {
+    rowGroups.forEach(g1 => {
         html += `<tr><th style="text-align:right; padding-right:8px;">${g1}</th>`;
         activeGroups.forEach(g2 => {
-          if (g1 === g2) { html += `<td style="background:#f1f5f9; color:#94a3b8;">-</td>`; return; }
-          const d = matrix[g1][g2];
-          if (!d || d.total === 0) { html += `<td style="background:#f8fafc; color:#cbd5e1;">0%</td>`; return; }
-          const pct = Math.round(getCellVal(d, metric));
-          html += `<td class="heatmap-cell" style="${getHeatmapColor(pct, metric)}">${pct}%</td>`;
+        if (g1 === g2) { 
+            html += `<td style="background:#f1f5f9; color:#94a3b8;">-</td>`; 
+            return; 
+        }
+        const d = matrix[g1][g2];
+        if (!d || d.total === 0) { 
+            html += `<td style="background:#f8fafc; color:#cbd5e1;">0%</td>`; 
+            return; 
+        }
+        const pct = Math.round(getCellVal(d, metric));
+        html += `<td class="heatmap-cell" style="${getHeatmapColor(pct, metric)}">${pct}%</td>`;
         });
         html += '</tr>';
-      });
-      html += '</tbody></table>';
-      document.getElementById('heatmapContainer').innerHTML = html;
+    });
+    html += '</tbody></table>';
+    document.getElementById('heatmapContainer').innerHTML = html;
     }
 
     function getCellVal(d, metric) {
@@ -490,40 +654,28 @@
       return ((d.pour + d.contre) / d.total) * 100;
     }
 
-        function getHeatmapColor(pct, metric) {
-        // Teintes HSL de référence : Vert = 142°, Rouge = 0°, Jaune = 45°
-        let hue = 142; // Vert (par défaut : POUR_POUR)
+    function getHeatmapColor(pct, metric) {
+      let hue = 142; // Vert (POUR_POUR)
 
-        if (metric === 'CONTRE_CONTRE') {
-            hue = 0;   // Rouge
-        } else if (metric === 'TOTAL_ACCORD' || metric === 'DESACCORD') {
-            hue = 45;  // Jaune
-        }
+      if (metric === 'CONTRE_CONTRE') {
+        hue = 0;   // Rouge
+      } else if (metric === 'TOTAL_ACCORD' || metric === 'DESACCORD') {
+        hue = 45;  // Jaune
+      }
 
-        // Fondu vers le blanc : à 0% lightness = 100% (blanc pur), à 100% lightness = 45% (couleur saturée)
-        const lightness = Math.round(100 - (pct * 0.55));
-        const saturation = Math.min(Math.round(pct * 1.2), 85); // Saturation progressive
+      const lightness = Math.round(100 - (pct * 0.55));
+      const saturation = Math.min(Math.round(pct * 1.2), 85);
+      const textColor = (pct > 60 && metric !== 'TOTAL_ACCORD' && metric !== 'DESACCORD') ? '#ffffff' : '#1e293b';
 
-        const textColor = (pct > 60 && metric !== 'TOTAL_ACCORD' && metric !== 'DESACCORD') ? '#ffffff' : '#1e293b';
-
-        return `background: hsl(${hue}, ${saturation}%, ${lightness}%); color: ${textColor};`;
-        }
-
-    function sortHeatmapByCol(groupName) {
-      currentHmSortCol = (currentHmSortCol === groupName) ? null : groupName;
-      renderHeatmap();
+      return `background: hsl(${hue}, ${saturation}%, ${lightness}%); color: ${textColor};`;
     }
 
-    // ==========================================
-    // RENDER VUE 3 : RADAR & TIMELINE CHARTS
-    // ==========================================
     function renderCharts() {
       const gA = document.getElementById('compGroupA').value;
       const gB = document.getElementById('compGroupB').value;
       const period = document.getElementById('chartDateRange').value;
       const filtered = filterDataset(period);
 
-      // Données Radar par commission
       const commStats = {};
       const timeStats = {};
 
@@ -531,13 +683,11 @@
         const pA = s.positions[gA], pB = s.positions[gB];
         if (!pA || !pB) return;
 
-        // Radar
         const comm = s.commission || "Autre";
         if (!commStats[comm]) commStats[comm] = { pour: 0, total: 0 };
         commStats[comm].total++;
         if (pA === 'POUR' && pB === 'POUR') commStats[comm].pour++;
 
-        // Timeline
         const mois = s.mois || "Inconnu";
         if (mois !== "Inconnu") {
           if (!timeStats[mois]) timeStats[mois] = { matches: 0, total: 0 };
@@ -546,7 +696,6 @@
         }
       });
 
-      // 1. Render Radar Chart
       const radarLabels = Object.keys(commStats).filter(c => c !== "Autre");
       const radarData = radarLabels.map(c => ((commStats[c].pour / commStats[c].total) * 100).toFixed(1));
 
@@ -567,7 +716,6 @@
         options: { scales: { r: { min: 0, max: 100 } } }
       });
 
-      // 2. Render Timeline Chart
       const sortedMonths = Object.keys(timeStats).sort();
       const timeData = sortedMonths.map(m => ((timeStats[m].matches / timeStats[m].total) * 100).toFixed(1));
 
@@ -590,11 +738,19 @@
       });
     }
 
+    function applyPresetFilter(filterText, element) {
+      currentPresetFilter = filterText;
+      document.querySelectorAll('.filter-chip-btn').forEach(btn => btn.classList.remove('active'));
+      element.classList.add('active');
+      renderDetailed();
+    }
+
     function renderDetailed() {
       const gA = document.getElementById('dtGroupA').value;
       const gB = document.getElementById('dtGroupB').value;
       const relation = document.getElementById('dtRelation').value;
-      const search = document.getElementById('dtSearch').value.toLowerCase();
+      const outcome = document.getElementById('dtOutcome').value; // <-- AJOUT 1
+      const search = document.getElementById('dtSearch').value.toLowerCase().trim();
 
       const matched = [];
       dataset.forEach(s => {
@@ -609,30 +765,70 @@
         if (relation === 'CONTRE_CONTRE' && !isContre) return;
         if (relation === 'DESACCORD' && !isDiff) return;
 
-        if (search && !s.titre.toLowerCase().includes(search)) return;
+         // AJOUT 2 : Filtrer par issue (vérifie si ta clé dans le JSON est s.sort ou s.resultat)
+        if (outcome !== 'ALL') {
+        const sortScrutin = (s.sort || s.resultat || '').toLowerCase();
+        if (!sortScrutin.includes(outcome)) return;
+        }
+
+        const titreLower = (s.titre || "").toLowerCase();
+
+        // Filtre rapide contextuel
+        if (currentPresetFilter !== 'ALL') {
+          if (!titreLower.includes(currentPresetFilter.toLowerCase())) return;
+        }
+
+        // Filtre recherche textuelle
+        if (search && !titreLower.includes(search)) return;
+
         matched.push({ ...s, pA, pB, isPour, isContre });
       });
 
-      const container = document.getElementById('dtScrutinsContainer');
-      container.innerHTML = `<p style="color:var(--text-muted); font-size:0.9rem;">${matched.length} scrutins trouvés.</p>`;
-
-      matched.slice(0, 50).forEach(s => {
-        let typeClass = s.isPour ? "pour-pour" : (s.isContre ? "contre-contre" : "desaccord");
-        const div = document.createElement('div');
-        div.className = `vote-item ${typeClass}`;
-        div.innerHTML = `
-          <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#64748b; margin-bottom:0.3rem;">
-            <span>Scrutin n°${s.id} — ${s.date} — ${s.commission}</span>
-            <span>Leg. ${s.legislature}</span>
-          </div>
-          <div style="font-weight:600; margin-bottom:0.5rem;">${s.titre}</div>
-          <div style="display:flex; gap:1rem; font-size:0.85rem;">
-            <div><strong>${gA} :</strong> ${s.pA}</div>
-            <div><strong>${gB} :</strong> ${s.pB}</div>
-          </div>
-        `;
-        container.appendChild(div);
+      // Tri anté-chronologique strict (du plus récent au plus ancien)
+      matched.sort((a, b) => {
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
+        if (dateB !== dateA) return dateB - dateA;
+        return Number(b.id || 0) - Number(a.id || 0);
       });
+
+      document.getElementById('dtCountLabel').textContent = `${matched.length.toLocaleString('fr-FR')} scrutin${matched.length > 1 ? 's' : ''} trouvé${matched.length > 1 ? 's' : ''}.`;
+
+      const container = document.getElementById('dtScrutinsContainer');
+      const visibleItems = matched.slice(0, 100);
+
+      container.innerHTML = visibleItems.map(s => {
+        let typeClass = s.isPour ? "pour-pour" : (s.isContre ? "contre-contre" : "desaccord");
+        
+        const getBadge = (pos) => {
+          if (pos === 'POUR') return `<span class="vote-tag-badge pour">POUR</span>`;
+          if (pos === 'CONTRE') return `<span class="vote-tag-badge contre">CONTRE</span>`;
+          return `<span class="vote-tag-badge abstention">${pos}</span>`;
+        };
+        // Détermine le label accentué et la classe CSS
+        const isAdopte = (s.sort || '').toLowerCase().includes('adopt');
+        const outcomeLabel = isAdopte ? 'ADOPTÉ' : 'REJETÉ';
+        const outcomeClass = isAdopte ? 'adopte' : 'rejete';
+
+        return `
+        <div class="vote-item-card ${typeClass}">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:#64748b;">
+            <span>Scrutin n°${s.id} — ${s.date || 'Date inconnue'} — ${s.commission || 'Séance'}</span>
+            <span>Législature ${s.legislature || '-'}</span>
+          </div>
+
+          <div style="font-weight:700; font-size:0.95rem; color:#0f172a; line-height:1.4;">
+            ${s.titre}
+          </div>
+
+          <div style="display:flex; align-items:center; flex-wrap:wrap; gap:1.25rem; font-size:0.85rem; padding-top:0.5rem; border-top:1px dashed var(--border-color);">
+            <div><span style="font-weight:700; color:#334155;">${gA} :</span> ${getBadge(s.pA)}</div>
+            <div><span style="font-weight:700; color:#334155;">${gB} :</span> ${getBadge(s.pB)}</div>
+            <div style="margin-left: auto;"><span class="outcome-badge ${outcomeClass}">${outcomeLabel}</span></div>
+          </div>
+        </div>
+      `;
+      }).join('');
     }
   </script>
 </body>
