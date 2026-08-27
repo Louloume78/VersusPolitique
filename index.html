@@ -778,8 +778,13 @@
           if (!titreLower.includes(currentPresetFilter.toLowerCase())) return;
         }
 
-        // Filtre recherche textuelle
-        if (search && !titreLower.includes(search)) return;
+        // Filtre recherche textuelle (titre, numéro de scrutin et date)
+        if (search) {
+          const idStr = String(s.id || '').toLowerCase();
+          const dateStr = String(s.date || '').toLowerCase();
+          const matchSearch = titreLower.includes(search) || idStr.includes(search) || dateStr.includes(search);
+          if (!matchSearch) return;
+        }
 
         matched.push({ ...s, pA, pB, isPour, isContre });
       });
