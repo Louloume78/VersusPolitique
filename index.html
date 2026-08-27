@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Observatoire des Votes - Assemblée Nationale</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --pour-color: #16a34a;
+      --pour-bg: #dcfce7;
+      --contre-color: #dc2626;
+      --contre-bg: #fee2e2;
+      --diff-color: #eab308;
+      --primary: #2563eb;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 1.5rem 2rem;
+      background: var(--bg-color);
+      color: var(--text-main);
+    }
+    h1 { margin: 0 0 0.25rem 0; font-size: 1.6rem; }
+    .subtitle { color: var(--text-muted); margin-top: 0; margin-bottom: 1.25rem; font-size: 0.95rem; }
+
+    .tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: #eff6ff;
+      border-radius: 6px 6px 0 0;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card {
+      background: var(--card-bg);
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 1.5rem;
+    }
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .filter-item { display: flex; flex-direction: column; gap: 0.35rem; }
+    label { font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em; }
+    select, input {
+      padding: 0.55rem;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.9rem;
+      background: #fff;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-color); text-align: left; }
+    th { background: #f1f5f9; font-weight: 600; font-size: 0.85rem; color: #334155; user-select: none; }
+    th.sortable { cursor: pointer; }
+    th.sortable:hover { background: #e2e8f0; }
+
+    .stacked-bar-container {
+      width: 100%;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      height: 1.4rem;
+      display: flex;
+    }
+    .bar-segment {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .segment-pour { background: var(--pour-color); }
+    .segment-contre { background: var(--contre-color); }
+    .segment-diff { background: var(--diff-color); color: #78350f; }
+
+    .cohesion-badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .heatmap-wrapper { overflow-x: auto; margin-top: 1rem; }
+    .heatmap-table { border-collapse: separate; border-spacing: 3px; width: 100%; }
+    .heatmap-table th, .heatmap-table td { padding: 0.6rem 0.4rem; text-align: center; font-size: 0.8rem; border: none; }
+    .heatmap-table th { background: #f8fafc; font-weight: 600; min-width: 100px; }
+    .heatmap-table th.sortable-hm { cursor: pointer; }
+    .heatmap-table th.sortable-hm:hover { background: #e2e8f0; }
+    .heatmap-cell { border-radius: 4px; font-weight: 700; cursor: pointer; }
+
+    .chart-container-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .chart-container-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Observatoire des Votes Parlementaires</h1>
+  <p class="subtitle" id="global-kpi">Chargement des données...</p>
+
+  <nav class="tabs-nav">
+    <button class="tab-btn active" onclick="switchTab('tab-overview')">Vue d'ensemble par Groupe</button>
+    <button class="tab-btn" onclick="switchTab('tab-heatmap')">Matrice Globale (Heatmap)</button>
+    <button class="tab-btn" onclick="switchTab('tab-radar-time')">Analyses Thématiques & Temporelles</button>
+    <button class="tab-btn" onclick="switchTab('tab-detailed')">Explorateur Scrutin par Scrutin</button>
+  </nav>
+
+  <!-- ONGLET 1 : VUE D'ENSEMBLE -->
+  <div id="tab-overview" class="tab-content active">
+    <div class="card">
+      <div class="filters-grid">
+        <div class="filter-item">
+          <label for="ovRefGroup">Groupe de référence</label>
+          <select id="ovRefGroup" onchange="renderOverview()"></select>
+        </div>
+        <div class="filter-item">
+          <label for="ovDateRange">Période</label>
+          <select id="ovDateRange" onchange="renderOverview()">
+            <option value="ALL">Toutes les législatures (16e et 17e)</option>
+            <option value="LEG_17">17e Législature stricte</option>
+            <option value="LEG_16">16e Législature stricte</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="ovCommission">Thématique</label>
+          <select id="ovCommission" onchange="renderOverview()">
+            <option value="ALL">Toutes les thématiques</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem; font-size: 0.9rem;">
+        Cohésion moyenne du groupe de référence : <span class="cohesion-badge" id="refGroupCohesion">-</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th class="sortable" onclick="setSortOverview('spectrum')" style="width: 22%;">Groupe</th>
+            <th class="sortable" onclick="setSortOverview('pour')" style="width: 42%;">Répartition des Votes</th>
+            <th class="sortable" onclick="setSortOverview('diff')" style="width: 24%;">Pour / Contre / Désaccord</th>
+            <th style="width: 12%;">Cohésion</th>
+          </tr>
+        </thead>
+        <tbody id="ovTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ONGLET 2 : HEATMAP -->
+  <div id="tab-heatmap" class="tab-content">
+    <div class="card">
+      <div class="filters-grid" style="max-width: 600px;">
+        <div class="filter-item">
+          <label for="hmDateRange">Période</label>
+          <select id="hmDateRange" onchange="renderHeatmap()">
+            <option value="ALL">Toutes les législatures</option>
+            <option value="LEG_17">17e Législature stricte</option>
+            <option value="LEG_16">16e Législature stricte</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="hmMetric">Métrique affichée</label>
+          <select id="hmMetric" onchange="renderHeatmap()">
+            <option value="POUR_POUR">Adhésion Positive (% POUR / POUR)</option>
+            <option value="TOTAL_ACCORD">Accord Global (% POUR + % CONTRE)</option>
+            <option value="CONTRE_CONTRE">Rejet Conjoint (% CONTRE / CONTRE)</option>
+          </select>
+        </div>
+      </div>
+      <div class="heatmap-wrapper" id="heatmapContainer"></div>
+    </div>
+  </div>
+
+  <!-- ONGLET 3 : ANALYSES THÉMATIQUES & TEMPORELLES -->
+  <div id="tab-radar-time" class="tab-content">
+    <div class="card">
+      <div class="filters-grid">
+        <div class="filter-item">
+          <label for="compGroupA">Groupe 1</label>
+          <select id="compGroupA" onchange="renderCharts()"></select>
+        </div>
+        <div class="filter-item">
+          <label for="compGroupB">Groupe 2</label>
+          <select id="compGroupB" onchange="renderCharts()"></select>
+        </div>
+        <div class="filter-item">
+          <label for="chartDateRange">Période</label>
+          <select id="chartDateRange" onchange="renderCharts()">
+            <option value="ALL">Toutes les dates</option>
+            <option value="LEG_17">17e Législature stricte</option>
+            <option value="LEG_16">16e Législature stricte</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="chart-container-grid">
+        <div>
+          <h3 style="font-size: 1rem; text-align: center;">Taux d'accord par Commission (%)</h3>
+          <canvas id="radarChart"></canvas>
+        </div>
+        <div>
+          <h3 style="font-size: 1rem; text-align: center;">Évolution de l'accord dans le temps (Mois par mois)</h3>
+          <canvas id="timelineChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONGLET 4 : EXPLORATEUR DÉTAILLÉ -->
+  <div id="tab-detailed" class="tab-content">
+    <div class="card">
+      <div class="filters-grid">
+        <div class="filter-item">
+          <label for="dtGroupA">Groupe 1</label>
+          <select id="dtGroupA" onchange="renderDetailed()"></select>
+        </div>
+        <div class="filter-item">
+          <label for="dtGroupB">Groupe 2</label>
+          <select id="dtGroupB" onchange="renderDetailed()"></select>
+        </div>
+        <div class="filter-item">
+          <label for="dtRelation">Type d'accord</label>
+          <select id="dtRelation" onchange="renderDetailed()">
+            <option value="ALL">Tous les scrutins</option>
+            <option value="POUR_POUR">Uniquement POUR / POUR</option>
+            <option value="CONTRE_CONTRE">Uniquement CONTRE / CONTRE</option>
+            <option value="DESACCORD">Uniquement Désaccords</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="dtSearch">Recherche</label>
+          <input type="text" id="dtSearch" placeholder="Rechercher..." oninput="renderDetailed()">
+        </div>
+      </div>
+      <div id="dtScrutinsContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    const POLITICAL_SPECTRUM = [
+      "Gauche Démocrate et Républicaine", "La France Insoumise", "Les Écologistes",
+      "Socialistes", "LIOT", "Renaissance / EPR", "Les Démocrates (MoDem)",
+      "Horizons", "Droite Républicaine / LR", "Union des Droites pour la République (UDR)",
+      "Rassemblement National", "Non Inscrits"
+    ];
+
+    let dataset = [];
+    let allCommissions = new Set();
+    let currentOvSort = "spectrum";
+    let currentHmSortCol = null;
+    let radarInstance = null;
+    let timelineInstance = null;
+
+    fetch('votes_enriched_complete_final.json')
+      .then(res => res.json())
+      .then(data => {
+        dataset = data;
+        dataset.forEach(s => { if (s.commission) allCommissions.add(s.commission); });
+        document.getElementById('global-kpi').textContent = `Base consolidée : ${dataset.length.toLocaleString('fr-FR')} scrutins répertoriés.`;
+        initSelectors();
+        renderOverview();
+      });
+
+    function initSelectors() {
+      const commissions = Array.from(allCommissions).sort();
+      populateSelect('ovRefGroup', POLITICAL_SPECTRUM);
+      populateSelect('ovCommission', commissions, true);
+
+      populateSelect('compGroupA', POLITICAL_SPECTRUM);
+      populateSelect('compGroupB', POLITICAL_SPECTRUM);
+      document.getElementById('compGroupA').value = "Rassemblement National";
+      document.getElementById('compGroupB').value = "Renaissance / EPR";
+
+      populateSelect('dtGroupA', POLITICAL_SPECTRUM);
+      populateSelect('dtGroupB', POLITICAL_SPECTRUM);
+      document.getElementById('dtGroupA').value = "Rassemblement National";
+      document.getElementById('dtGroupB').value = "Renaissance / EPR";
+    }
+
+    function populateSelect(id, list, hasAll = false) {
+      const el = document.getElementById(id);
+      el.innerHTML = hasAll ? '<option value="ALL">Toutes les thématiques</option>' : '';
+      list.forEach(item => el.appendChild(new Option(item, item)));
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+
+      if (tabId === 'tab-overview') renderOverview();
+      if (tabId === 'tab-heatmap') renderHeatmap();
+      if (tabId === 'tab-radar-time') renderCharts();
+      if (tabId === 'tab-detailed') renderDetailed();
+    }
+
+    function filterDataset(selectedPeriod, commission = 'ALL') {
+      return dataset.filter(s => {
+        if (commission !== 'ALL' && s.commission !== commission) return false;
+        if (selectedPeriod === 'LEG_16') return s.legislature === "16" || (s.date && s.date < "2024-06-10");
+        if (selectedPeriod === 'LEG_17') return s.legislature === "17" || (s.date && s.date >= "2024-07-01");
+        return true;
+      });
+    }
+
+    function setSortOverview(type) {
+      currentOvSort = (currentOvSort === type) ? (type + '_desc') : type;
+      renderOverview();
+    }
+
+    function renderOverview() {
+      const ref = document.getElementById('ovRefGroup').value;
+      const dateRange = document.getElementById('ovDateRange').value;
+      const commission = document.getElementById('ovCommission').value;
+      const filtered = filterDataset(dateRange, commission);
+
+      const stats = {};
+      let refCohTotal = 0, refCohCount = 0;
+
+      POLITICAL_SPECTRUM.forEach(g => {
+        if (g !== ref) stats[g] = { pour: 0, contre: 0, diff: 0, total: 0, cohTotal: 0, cohCount: 0 };
+      });
+
+      filtered.forEach(s => {
+        const refPos = s.positions[ref];
+        if (s.cohesions && s.cohesions[ref]) {
+          refCohTotal += s.cohesions[ref];
+          refCohCount++;
+        }
+        if (!refPos) return;
+
+        Object.entries(s.positions).forEach(([other, pos]) => {
+          if (other === ref || !stats[other]) return;
+          stats[other].total++;
+          if (refPos === 'POUR' && pos === 'POUR') stats[other].pour++;
+          else if (refPos === 'CONTRE' && pos === 'CONTRE') stats[other].contre++;
+          else stats[other].diff++;
+
+          if (s.cohesions && s.cohesions[other]) {
+            stats[other].cohTotal += s.cohesions[other];
+            stats[other].cohCount++;
+          }
+        });
+      });
+
+      document.getElementById('refGroupCohesion').textContent = 
+        refCohCount ? `${(refCohTotal / refCohCount).toFixed(1)}%` : '-';
+
+      let rows = Object.entries(stats)
+        .filter(([_, d]) => d.total > 0)
+        .map(([group, d]) => ({
+          group,
+          pourPct: parseFloat(((d.pour / d.total) * 100).toFixed(1)),
+          contrePct: parseFloat(((d.contre / d.total) * 100).toFixed(1)),
+          diffPct: parseFloat(((d.diff / d.total) * 100).toFixed(1)),
+          cohesion: d.cohCount ? (d.cohTotal / d.cohCount).toFixed(1) : '-',
+          ...d
+        }));
+
+      if (currentOvSort === 'spectrum') rows.sort((a, b) => POLITICAL_SPECTRUM.indexOf(a.group) - POLITICAL_SPECTRUM.indexOf(b.group));
+      else if (currentOvSort === 'pour') rows.sort((a, b) => b.pourPct - a.pourPct);
+      else if (currentOvSort === 'pour_desc') rows.sort((a, b) => a.pourPct - b.pourPct);
+      else if (currentOvSort === 'diff') rows.sort((a, b) => b.diffPct - a.diffPct);
+      else if (currentOvSort === 'diff_desc') rows.sort((a, b) => a.diffPct - b.diffPct);
+
+      const tbody = document.getElementById('ovTableBody');
+      tbody.innerHTML = '';
+
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${r.group}</strong></td>
+          <td>
+            <div class="stacked-bar-container">
+              <div class="bar-segment segment-pour" style="width: ${r.pourPct}%;">${r.pourPct > 6 ? r.pourPct + '%' : ''}</div>
+              <div class="bar-segment segment-contre" style="width: ${r.contrePct}%;">${r.contrePct > 6 ? r.contrePct + '%' : ''}</div>
+              <div class="bar-segment segment-diff" style="width: ${r.diffPct}%;">${r.diffPct > 6 ? r.diffPct + '%' : ''}</div>
+            </div>
+          </td>
+          <td style="font-size: 0.85rem;">
+            <span style="color: var(--pour-color); font-weight:700;">${r.pourPct}%</span> / 
+            <span style="color: var(--contre-color); font-weight:700;">${r.contrePct}%</span> / 
+            <span style="color: #b45309; font-weight:700;">${r.diffPct}%</span>
+          </td>
+          <td><span class="cohesion-badge">${r.cohesion}%</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderHeatmap() {
+      const dateRange = document.getElementById('hmDateRange').value;
+      const metric = document.getElementById('hmMetric').value;
+      const filtered = filterDataset(dateRange);
+      const activeGroups = POLITICAL_SPECTRUM.filter(g => filtered.some(s => s.positions && s.positions[g]));
+
+      const matrix = {};
+      activeGroups.forEach(g1 => {
+        matrix[g1] = {};
+        activeGroups.forEach(g2 => { matrix[g1][g2] = { pour: 0, contre: 0, total: 0 }; });
+      });
+
+      filtered.forEach(s => {
+        const p = s.positions;
+        const present = Object.keys(p).filter(k => activeGroups.includes(k));
+        for (let i = 0; i < present.length; i++) {
+          for (let j = 0; j < present.length; j++) {
+            const g1 = present[i], g2 = present[j];
+            matrix[g1][g2].total++;
+            if (p[g1] === 'POUR' && p[g2] === 'POUR') matrix[g1][g2].pour++;
+            if (p[g1] === 'CONTRE' && p[g2] === 'CONTRE') matrix[g1][g2].contre++;
+          }
+        }
+      });
+
+      let rowGroups = [...activeGroups];
+      if (currentHmSortCol && matrix[currentHmSortCol]) {
+        rowGroups.sort((a, b) => getCellVal(matrix[b][currentHmSortCol], metric) - getCellVal(matrix[a][currentHmSortCol], metric));
+      }
+
+      let html = '<table class="heatmap-table"><thead><tr><th></th>';
+      activeGroups.forEach(g => {
+        html += `<th class="sortable-hm" onclick="sortHeatmapByCol('${g}')">${g}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      rowGroups.forEach(g1 => {
+        html += `<tr><th style="text-align:right; padding-right:8px;">${g1}</th>`;
+        activeGroups.forEach(g2 => {
+          if (g1 === g2) { html += `<td style="background:#f1f5f9; color:#94a3b8;">-</td>`; return; }
+          const d = matrix[g1][g2];
+          if (!d || d.total === 0) { html += `<td style="background:#f8fafc; color:#cbd5e1;">0%</td>`; return; }
+          const pct = Math.round(getCellVal(d, metric));
+          html += `<td class="heatmap-cell" style="${getHeatmapColor(pct, metric)}">${pct}%</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('heatmapContainer').innerHTML = html;
+    }
+
+    function getCellVal(d, metric) {
+      if (!d || d.total === 0) return 0;
+      if (metric === 'POUR_POUR') return (d.pour / d.total) * 100;
+      if (metric === 'CONTRE_CONTRE') return (d.contre / d.total) * 100;
+      return ((d.pour + d.contre) / d.total) * 100;
+    }
+
+        function getHeatmapColor(pct, metric) {
+        // Teintes HSL de référence : Vert = 142°, Rouge = 0°, Jaune = 45°
+        let hue = 142; // Vert (par défaut : POUR_POUR)
+
+        if (metric === 'CONTRE_CONTRE') {
+            hue = 0;   // Rouge
+        } else if (metric === 'TOTAL_ACCORD' || metric === 'DESACCORD') {
+            hue = 45;  // Jaune
+        }
+
+        // Fondu vers le blanc : à 0% lightness = 100% (blanc pur), à 100% lightness = 45% (couleur saturée)
+        const lightness = Math.round(100 - (pct * 0.55));
+        const saturation = Math.min(Math.round(pct * 1.2), 85); // Saturation progressive
+
+        const textColor = (pct > 60 && metric !== 'TOTAL_ACCORD' && metric !== 'DESACCORD') ? '#ffffff' : '#1e293b';
+
+        return `background: hsl(${hue}, ${saturation}%, ${lightness}%); color: ${textColor};`;
+        }
+
+    function sortHeatmapByCol(groupName) {
+      currentHmSortCol = (currentHmSortCol === groupName) ? null : groupName;
+      renderHeatmap();
+    }
+
+    // ==========================================
+    // RENDER VUE 3 : RADAR & TIMELINE CHARTS
+    // ==========================================
+    function renderCharts() {
+      const gA = document.getElementById('compGroupA').value;
+      const gB = document.getElementById('compGroupB').value;
+      const period = document.getElementById('chartDateRange').value;
+      const filtered = filterDataset(period);
+
+      // Données Radar par commission
+      const commStats = {};
+      const timeStats = {};
+
+      filtered.forEach(s => {
+        const pA = s.positions[gA], pB = s.positions[gB];
+        if (!pA || !pB) return;
+
+        // Radar
+        const comm = s.commission || "Autre";
+        if (!commStats[comm]) commStats[comm] = { pour: 0, total: 0 };
+        commStats[comm].total++;
+        if (pA === 'POUR' && pB === 'POUR') commStats[comm].pour++;
+
+        // Timeline
+        const mois = s.mois || "Inconnu";
+        if (mois !== "Inconnu") {
+          if (!timeStats[mois]) timeStats[mois] = { matches: 0, total: 0 };
+          timeStats[mois].total++;
+          if (pA === pB) timeStats[mois].matches++;
+        }
+      });
+
+      // 1. Render Radar Chart
+      const radarLabels = Object.keys(commStats).filter(c => c !== "Autre");
+      const radarData = radarLabels.map(c => ((commStats[c].pour / commStats[c].total) * 100).toFixed(1));
+
+      if (radarInstance) radarInstance.destroy();
+      const ctxRadar = document.getElementById('radarChart').getContext('2d');
+      radarInstance = new Chart(ctxRadar, {
+        type: 'radar',
+        data: {
+          labels: radarLabels,
+          datasets: [{
+            label: `% Adhésion (Pour/Pour)`,
+            data: radarData,
+            backgroundColor: 'rgba(22, 163, 74, 0.2)',
+            borderColor: '#16a34a',
+            pointBackgroundColor: '#16a34a'
+          }]
+        },
+        options: { scales: { r: { min: 0, max: 100 } } }
+      });
+
+      // 2. Render Timeline Chart
+      const sortedMonths = Object.keys(timeStats).sort();
+      const timeData = sortedMonths.map(m => ((timeStats[m].matches / timeStats[m].total) * 100).toFixed(1));
+
+      if (timelineInstance) timelineInstance.destroy();
+      const ctxTime = document.getElementById('timelineChart').getContext('2d');
+      timelineInstance = new Chart(ctxTime, {
+        type: 'line',
+        data: {
+          labels: sortedMonths,
+          datasets: [{
+            label: `% Accord Global (Mois par mois)`,
+            data: timeData,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: { scales: { y: { min: 0, max: 100 } } }
+      });
+    }
+
+    function renderDetailed() {
+      const gA = document.getElementById('dtGroupA').value;
+      const gB = document.getElementById('dtGroupB').value;
+      const relation = document.getElementById('dtRelation').value;
+      const search = document.getElementById('dtSearch').value.toLowerCase();
+
+      const matched = [];
+      dataset.forEach(s => {
+        const pA = s.positions[gA], pB = s.positions[gB];
+        if (!pA || !pB) return;
+
+        const isPour = (pA === 'POUR' && pB === 'POUR');
+        const isContre = (pA === 'CONTRE' && pB === 'CONTRE');
+        const isDiff = (pA !== pB);
+
+        if (relation === 'POUR_POUR' && !isPour) return;
+        if (relation === 'CONTRE_CONTRE' && !isContre) return;
+        if (relation === 'DESACCORD' && !isDiff) return;
+
+        if (search && !s.titre.toLowerCase().includes(search)) return;
+        matched.push({ ...s, pA, pB, isPour, isContre });
+      });
+
+      const container = document.getElementById('dtScrutinsContainer');
+      container.innerHTML = `<p style="color:var(--text-muted); font-size:0.9rem;">${matched.length} scrutins trouvés.</p>`;
+
+      matched.slice(0, 50).forEach(s => {
+        let typeClass = s.isPour ? "pour-pour" : (s.isContre ? "contre-contre" : "desaccord");
+        const div = document.createElement('div');
+        div.className = `vote-item ${typeClass}`;
+        div.innerHTML = `
+          <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#64748b; margin-bottom:0.3rem;">
+            <span>Scrutin n°${s.id} — ${s.date} — ${s.commission}</span>
+            <span>Leg. ${s.legislature}</span>
+          </div>
+          <div style="font-weight:600; margin-bottom:0.5rem;">${s.titre}</div>
+          <div style="display:flex; gap:1rem; font-size:0.85rem;">
+            <div><strong>${gA} :</strong> ${s.pA}</div>
+            <div><strong>${gB} :</strong> ${s.pB}</div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
