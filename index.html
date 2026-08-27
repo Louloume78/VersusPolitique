@@ -765,10 +765,10 @@
         if (relation === 'CONTRE_CONTRE' && !isContre) return;
         if (relation === 'DESACCORD' && !isDiff) return;
 
-         // AJOUT 2 : Filtrer par issue (vérifie si ta clé dans le JSON est s.sort ou s.resultat)
         if (outcome !== 'ALL') {
-        const sortScrutin = (s.sort || s.resultat || '').toLowerCase();
-        if (!sortScrutin.includes(outcome)) return;
+        const sSort = (s.sort || '').toLowerCase();
+        if (outcome === 'adopte' && !sSort.includes('adopt')) return;
+        if (outcome === 'rejete' && !sSort.includes('rejet')) return;
         }
 
         const titreLower = (s.titre || "").toLowerCase();
