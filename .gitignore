@@ -1,0 +1,42 @@
+# Données brutes volumineuses
+Amendements_json/
+Dossiers_Legislatifs_json/
+scutins_json/
+V1.1/
+old_versions/
+
+# Exclusions strictes demandées : aucun script Python, batch, powershell, ni audit csv
+*.py
+*.bat
+*.ps1
+*.csv
+PROJECT_STATUS.md
+exact_mapping.json
+gitignore
+
+# Caches et environnements
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.cache/
+huggingface/
+models/
+
+# Fichiers temporaires & OS
+*.zip
+*.tar.gz
+*.7z
+*.rar
+*.tmp
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+implementation_plan.md
+RECAP_HIERARCHISATION_VOTES.md
