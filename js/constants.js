@@ -31,6 +31,22 @@ function hydrateScrutin(s) {
   const aArr = s.abst || [];
   const totArr = s.tot || [];
 
+  if (!s.synthese) {
+    let totP = 0, totC = 0, totA = 0;
+    for (let i = 0; i < pArr.length; i++) {
+      totP += (pArr[i] || 0);
+      totC += (cArr[i] || 0);
+      totA += (aArr[i] || 0);
+    }
+    s.synthese = {
+      pour: totP,
+      contre: totC,
+      abstentions: totA,
+      exprimes: totP + totC,
+      votants: totP + totC + totA
+    };
+  }
+
   for (let i = 0; i < CANONICAL_GROUPS.length; i++) {
     const g = CANONICAL_GROUPS[i];
     const p = pArr[i] || 0;
@@ -167,6 +183,7 @@ let currentOvSort = "spectrum";
 let currentHmSortCol = null;
 let currentPresetFilter = "MAJOR";
 let globalMajorFilterOnly = true;
+let lastNonExplorerScope = "MAJOR";
 let currentActiveTab = "tab-home";
 let currentComparisonData = null;
 let currentShareMode = 'comparison'; // 'comparison' ou 'scrutin'

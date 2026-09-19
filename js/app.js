@@ -101,6 +101,7 @@ function loadFullDataset(onComplete) {
       for (let i = 0; i < data.length; i++) {
         hydrateScrutin(data[i]);
         if (data[i].commission) allCommissions.add(data[i].commission);
+        scrutinByKey.set(`${data[i].legislature}_${data[i].id}`, data[i]);
       }
       fullDataset = data;
       dataset = fullDataset;
@@ -123,6 +124,9 @@ function prefetchFullDataset() {
   loadFullDataset();
 }
 
+// Index universel composite : Map<"${legislature}_${id}", Scrutin> pour accès O(1) instantané
+const scrutinByKey = new Map();
+
 // Chargement initial unifié haute performance de la base consolidée (~6 Mo brut, ~600 Ko Gzip)
 fetch('votes_enriched_complete_final.json')
   .then(res => res.json())
@@ -131,6 +135,7 @@ fetch('votes_enriched_complete_final.json')
     for (let i = 0; i < data.length; i++) {
       hydrateScrutin(data[i]);
       if (data[i].commission) allCommissions.add(data[i].commission);
+      scrutinByKey.set(`${data[i].legislature}_${data[i].id}`, data[i]);
     }
     fullDataset = data;
     dataset = fullDataset;
@@ -584,25 +589,41 @@ function updateCommissionSelectOptions() {
   }
 }
 
-function setGlobalMajorFilter(isMajor) {
-  if (!isMajor && !fullDataset) {
+function setGlobalMajorFilter(scope) {
+  if (scope === true) scope = 'MAJOR';
+  else if (scope === false) scope = 'ALL';
+
+  if (scope === 'ALL' && !fullDataset) {
     loadFullDataset(() => {
-      setGlobalMajorFilter(false);
+      setGlobalMajorFilter('ALL');
     });
     return;
   }
-  globalMajorFilterOnly = isMajor;
-  document.getElementById('btnFilterAll').classList.toggle('active', !isMajor);
-  document.getElementById('btnFilterMajor').classList.toggle('active', isMajor);
-  const dtMajorBtn = document.getElementById('dtFilterMajor');
-  const dtAllBtn = document.getElementById('dtFilterAll');
-  if (dtMajorBtn && dtAllBtn) {
-    dtMajorBtn.classList.toggle('active', isMajor);
-    dtAllBtn.classList.toggle('active', !isMajor);
-    currentPresetFilter = isMajor ? 'MAJOR' : 'ALL';
+
+  // Si on n'est pas dans l'explorateur, on mémorise le choix pour les autres onglets
+  if (currentActiveTab !== 'tab-detailed') {
+    lastNonExplorerScope = (scope === 'PIVOT') ? 'MAJOR' : scope;
   }
-  updateCommissionSelectOptions();
-  refreshAllViews();
+
+  const isMajor = (scope === 'MAJOR');
+  globalMajorFilterOnly = isMajor;
+  currentPresetFilter = scope;
+
+  // Mise à jour visuelle des boutons du bandeau global
+  const btnMajor = document.getElementById('btnFilterMajor');
+  const btnPivot = document.getElementById('btnFilterPivot');
+  const btnAll = document.getElementById('btnFilterAll');
+
+  if (btnMajor) btnMajor.classList.toggle('active', scope === 'MAJOR');
+  if (btnPivot) btnPivot.classList.toggle('active', scope === 'PIVOT');
+  if (btnAll) btnAll.classList.toggle('active', scope === 'ALL');
+
+  if (currentActiveTab === 'tab-detailed') {
+    renderDetailed();
+  } else {
+    updateCommissionSelectOptions();
+    refreshAllViews();
+  }
 }
 
 function onGlobalPeriodChange() {
@@ -681,6 +702,16 @@ function switchTab(tabId) {
 
   // Scroll automatique instantané en haut pour éviter les à-coups
   window.scrollTo({ top: 0, behavior: 'instant' });
+
+  // Gestion du sélecteur de portée global (2 options sur les autres outils, 3 options dans l'Explorateur)
+  const btnPivot = document.getElementById('btnFilterPivot');
+  if (tabId === 'tab-detailed') {
+    if (btnPivot) btnPivot.style.display = '';
+    setGlobalMajorFilter(currentPresetFilter || lastNonExplorerScope || 'MAJOR');
+  } else if (tabId !== 'tab-home' && tabId !== 'tab-attendance') {
+    if (btnPivot) btnPivot.style.display = 'none';
+    setGlobalMajorFilter(lastNonExplorerScope || 'MAJOR');
+  }
 
   if (tabId === 'tab-overview') renderOverview();
   if (tabId === 'tab-heatmap') renderHeatmap();
@@ -1023,17 +1054,18 @@ function getHeatmapColor(val, metric, minVal, maxVal) {
   return `background: hsl(${hue}, ${saturation}%, ${lightness}%); color: ${textColor}; font-weight: ${ratio > 0.5 ? '700' : '600'};`;
 }
 
-function applyPresetFilter(filterText, element) {
-  if (filterText === 'ALL' && !fullDataset) {
-    loadFullDataset(() => {
-      applyPresetFilter('ALL', element);
-    });
-    return;
-  }
-  currentPresetFilter = filterText;
-  document.querySelectorAll('.filter-chips-container .filter-chip-btn').forEach(btn => btn.classList.remove('active'));
-  if (element) element.classList.add('active');
-  renderDetailed();
+function applyPresetFilter(filterText) {
+  setGlobalMajorFilter(filterText);
+}
+
+function togglePivotAccordion(event, parentKey) {
+  if (event) event.stopPropagation();
+  const panel = document.getElementById(`pivot-panel-${parentKey}`);
+  const toggle = document.getElementById(`pivot-toggle-${parentKey}`);
+  if (!panel || !toggle) return;
+  const isOpening = (panel.style.display === 'none');
+  panel.style.display = isOpening ? 'flex' : 'none';
+  toggle.classList.toggle('active', isOpening);
 }
 
 function renderDetailed() {
@@ -1057,7 +1089,6 @@ function renderDetailed() {
         if (pos !== targetPos) return;
       }
     } else if (targetPos !== 'ALL') {
-      // Si aucune entité ciblée mais une position demandée, au moins un groupe doit avoir voté ainsi
       const hasPos = Object.values(s.positions || {}).some(p => p === targetPos);
       if (!hasPos) return;
     }
@@ -1070,19 +1101,23 @@ function renderDetailed() {
 
     const titreLower = (s.titre || "").toLowerCase();
     const idStr = String(s.id || "");
+    const synthLower = (s.synthese_ia || "").toLowerCase();
 
-    // Filtre rapide contextuel
+    // Filtre par niveau de lecture (triptyque citoyen)
     if (currentPresetFilter === 'MAJOR') {
       if (!isMajorScrutin(s)) return;
+    } else if (currentPresetFilter === 'PIVOT') {
+      if (!s.synthese_ia) return;
     } else if (currentPresetFilter !== 'ALL') {
-      if (!titreLower.includes(currentPresetFilter.toLowerCase())) return;
+      if (!titreLower.includes(currentPresetFilter.toLowerCase()) && !synthLower.includes(currentPresetFilter.toLowerCase())) return;
     }
 
-    // Filtre recherche textuelle (titre ou numéro de scrutin)
+    // Filtre recherche textuelle (titre, numéro de scrutin ou synthèse factuelle)
     if (search) {
       const matchTitle = titreLower.includes(search);
       const matchId = idStr.includes(search);
-      if (!matchTitle && !matchId) return;
+      const matchSynth = synthLower.includes(search);
+      if (!matchTitle && !matchId && !matchSynth) return;
     }
 
     matched.push(s);
@@ -1096,10 +1131,38 @@ function renderDetailed() {
     return Number(b.id || 0) - Number(a.id || 0);
   });
 
-  document.getElementById('dtCountLabel').textContent = `${matched.length.toLocaleString('fr-FR')} scrutin${matched.length > 1 ? 's' : ''} trouvé${matched.length > 1 ? 's' : ''}`;
+  let filterLabel = "scrutins";
+  if (currentPresetFilter === 'MAJOR') filterLabel = "textes majeurs";
+  else if (currentPresetFilter === 'PIVOT') filterLabel = "débats clés & pivots";
+
+  document.getElementById('dtCountLabel').textContent = `${matched.length.toLocaleString('fr-FR')} ${filterLabel} trouvé${matched.length > 1 ? 's' : ''}`;
 
   const container = document.getElementById('dtScrutinsContainer');
   const visibleItems = matched.slice(0, 80);
+
+  // Fonction helper pour générer la frise panoramique d'un scrutin
+  const buildStripHtml = (sc, isMini = false) => {
+    return POLITICAL_SPECTRUM.map(g => {
+      const shortName = GROUP_SHORT_NAMES[g] || g.substring(0, 3).toUpperCase();
+      const pos = sc.positions ? sc.positions[g] : null;
+      let chipClass = "absent";
+      let labelText = "Non participant / <3 votants";
+
+      if (pos === 'POUR') {
+        chipClass = "pour"; labelText = "Vote : POUR";
+      } else if (pos === 'CONTRE') {
+        chipClass = "contre"; labelText = "Vote : CONTRE";
+      } else if (pos === 'ABSTENTION') {
+        chipClass = "abstention"; labelText = "Vote : ABSTENTION";
+      }
+
+      const dg = (sc.decompte_groupes && sc.decompte_groupes[g]) ? sc.decompte_groupes[g] : null;
+      const presInfo = dg ? ` (${dg.pour + dg.contre + dg.abstentions}/${dg.total_membres} présents)` : '';
+      const tooltip = `${g} : ${labelText}${presInfo}`;
+
+      return `<span class="panoramic-chip ${chipClass}" title="${tooltip}"><strong>${shortName}</strong></span>`;
+    }).join('');
+  };
 
   container.innerHTML = visibleItems.map(s => {
     const isAdopte = (s.sort || '').toLowerCase().includes('adopt');
@@ -1107,28 +1170,78 @@ function renderDetailed() {
     const outcomeClass = isAdopte ? 'adopte' : 'rejete';
     const cardBorderClass = isAdopte ? 'adopte-card' : 'rejete-card';
 
-    // Génération de la frise panoramique épurée des 11 groupes
-    const stripHtml = POLITICAL_SPECTRUM.map(g => {
-      const shortName = GROUP_SHORT_NAMES[g] || g.substring(0, 3).toUpperCase();
-      const pos = s.positions ? s.positions[g] : null;
-      let chipClass = "absent";
-      let char = "-";
-      let labelText = "Non participant / <3 votants";
+    const stripHtml = buildStripHtml(s);
 
-      if (pos === 'POUR') {
-        chipClass = "pour"; char = "P"; labelText = "Vote : POUR";
-      } else if (pos === 'CONTRE') {
-        chipClass = "contre"; char = "C"; labelText = "Vote : CONTRE";
-      } else if (pos === 'ABSTENTION') {
-        chipClass = "abstention"; char = "A"; labelText = "Vote : ABSTENTION";
+    // 1. Encart de synthèse factuelle si le scrutin est un débat pivot
+    let summaryHtml = '';
+    if (s.synthese_ia) {
+      const metaParts = [];
+      if (s.amdt_num) metaParts.push(`Amdt n°${s.amdt_num}`);
+      if (s.article) metaParts.push(s.article.toLowerCase().startsWith('art') ? s.article : `Art. ${s.article}`);
+      if (s.amdt_auteur) metaParts.push(s.amdt_auteur);
+      const metaBadgeHtml = metaParts.length > 0 ? `<span class="summary-meta-info">${metaParts.join(' · ')}</span>` : '';
+
+      summaryHtml = `
+        <div class="vote-item-summary-box">
+          <div class="summary-badge-row">
+            <span class="summary-badge">⚡ DÉBAT CLÉ</span>
+            ${metaBadgeHtml}
+          </div>
+          <div class="summary-text">${s.synthese_ia}</div>
+        </div>
+      `;
+    }
+
+    // 2. Accordéon des Débats Pivots sous un Texte Majeur
+    let accordionHtml = '';
+    const childIds = s.scrutins_lies || [];
+    if (childIds.length > 0) {
+      const childrenCards = childIds.map(childId => {
+        const childKey = `${s.legislature}_${childId}`;
+        const child = scrutinByKey.get(childKey);
+        if (!child) return '';
+
+        const childIsAdopte = (child.sort || '').toLowerCase().includes('adopt');
+        const childOutcomeLabel = childIsAdopte ? 'ADOPTÉ' : 'REJETÉ';
+        const childOutcomeClass = childIsAdopte ? 'adopte' : 'rejete';
+        const childBorderClass = childIsAdopte ? 'adopte-card' : 'rejete-card';
+        const childStrip = buildStripHtml(child, true);
+
+        const childSummary = child.synthese_ia || child.titre;
+        const refLabel = child.amdt_num ? `Amdt n°${child.amdt_num}` : `Scrutin n°${child.id}`;
+        const authorLabel = child.amdt_auteur ? ` · ${child.amdt_auteur}` : '';
+        const articleLabel = child.article ? ` · ${child.article}` : '';
+
+        return `
+          <div class="pivot-child-card ${childBorderClass}" onclick="openScrutinModal('${child.id}', '${child.legislature || ''}')" title="Cliquer pour afficher la fiche détaillée et l'hémicycle de cet amendement">
+            <div class="pivot-child-header">
+              <span><strong>${refLabel}</strong>${articleLabel}${authorLabel}</span>
+              <span class="outcome-badge ${childOutcomeClass}">${childOutcomeLabel}</span>
+            </div>
+            <div class="pivot-child-summary">
+              ${childSummary}
+            </div>
+            <div class="panoramic-strip mini">
+              ${childStrip}
+            </div>
+          </div>
+        `;
+      }).filter(Boolean).join('');
+
+      if (childrenCards) {
+        accordionHtml = `
+          <div class="pivot-accordion-wrapper" onclick="event.stopPropagation()">
+            <button type="button" class="pivot-accordion-toggle" id="pivot-toggle-${s.legislature}_${s.id}" onclick="togglePivotAccordion(event, '${s.legislature}_${s.id}')">
+              <span>⚡ <strong>${childIds.length} débat${childIds.length > 1 ? 's' : ''} clé${childIds.length > 1 ? 's' : ''} &amp; amendement${childIds.length > 1 ? 's' : ''} disputé${childIds.length > 1 ? 's' : ''}</strong> sur ce texte</span>
+              <span class="pivot-toggle-arrow">▼</span>
+            </button>
+            <div class="pivot-accordion-panel" id="pivot-panel-${s.legislature}_${s.id}" style="display: none;">
+              ${childrenCards}
+            </div>
+          </div>
+        `;
       }
-
-      const dg = (s.decompte_groupes && s.decompte_groupes[g]) ? s.decompte_groupes[g] : null;
-      const presInfo = dg ? ` (${dg.pour + dg.contre + dg.abstentions}/${dg.total_membres} présents)` : '';
-      const tooltip = `${g} : ${labelText}${presInfo}`;
-
-      return `<span class="panoramic-chip ${chipClass}" title="${tooltip}"><strong>${shortName}</strong></span>`;
-    }).join('');
+    }
 
     return `
     <div class="vote-item-card ${cardBorderClass}" onclick="openScrutinModal('${s.id}', '${s.legislature || ''}')" title="Cliquer pour afficher la fiche détaillée et la ventilation des voix">
@@ -1140,13 +1253,17 @@ function renderDetailed() {
         </span>
       </div>
 
-      <div style="font-weight:700; font-size:0.95rem; color:#0f172a; line-height:1.4;">
+      ${summaryHtml}
+
+      <div class="${s.synthese_ia ? 'vote-item-official-title' : ''}" style="${!s.synthese_ia ? 'font-weight:700; font-size:0.95rem; color:#0f172a; line-height:1.4;' : ''}">
         ${s.titre}
       </div>
 
       <div class="panoramic-strip">
         ${stripHtml}
       </div>
+
+      ${accordionHtml}
     </div>
   `;
   }).join('');

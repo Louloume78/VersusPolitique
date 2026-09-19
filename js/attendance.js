@@ -78,14 +78,33 @@ function getAttendanceGroupes() {
  * Calcule dynamiquement les médianes pour un échantillon de députés
  */
 function computeAttendanceMedians(deputes) {
-  if (!deputes || deputes.length === 0) return { median_global: 22.7, median_majeur: 32.0 };
+  if (!deputes || deputes.length === 0) {
+    return {
+      q1_global: 10.0, median_global: 22.7,
+      q1_majeur: 14.0, median_majeur: 32.0
+    };
+  }
   const sortedGlobal = deputes.map(d => d.taux_global).sort((a, b) => a - b);
   const sortedMajeur = deputes.map(d => d.taux_majeurs).sort((a, b) => a - b);
-  const mid = Math.floor(deputes.length / 2);
-  const medGlobal = deputes.length % 2 !== 0 ? sortedGlobal[mid] : (sortedGlobal[mid - 1] + sortedGlobal[mid]) / 2;
-  const medMajeur = deputes.length % 2 !== 0 ? sortedMajeur[mid] : (sortedMajeur[mid - 1] + sortedMajeur[mid]) / 2;
+  const n = deputes.length;
+
+  const getPercentile = (arr, p) => {
+    const idx = (arr.length - 1) * p;
+    const lower = Math.floor(idx);
+    const upper = Math.ceil(idx);
+    const weight = idx - lower;
+    return arr[lower] * (1 - weight) + arr[upper] * weight;
+  };
+
+  const q1Global = getPercentile(sortedGlobal, 0.25);
+  const medGlobal = getPercentile(sortedGlobal, 0.50);
+  const q1Majeur = getPercentile(sortedMajeur, 0.25);
+  const medMajeur = getPercentile(sortedMajeur, 0.50);
+
   return {
+    q1_global: Math.round(q1Global * 10) / 10,
     median_global: Math.round(medGlobal * 10) / 10,
+    q1_majeur: Math.round(q1Majeur * 10) / 10,
     median_majeur: Math.round(medMajeur * 10) / 10
   };
 }
@@ -427,16 +446,84 @@ function renderQuadrantChart() {
     filteredDeputes = filteredDeputes.filter(d => d.groupe === deputoscopeFilters.group);
   }
 
-  // Préparer les points pour le scatter plot (Axe X = Textes Majeurs, Axe Y = Présence Globale)
+  // Échelle par morceaux ancrée sur les quantiles statistiques :
+  // 0 -> 25% de la longueur de l'axe : de minVal à Q1
+  // 25% -> 50% de la longueur de l'axe : de Q1 à Médiane
+  // 50% -> 100% de la longueur de l'axe : de Médiane à maxVal
+  function createQuantileScale(minVal, q1Val, medVal, maxVal) {
+    const min = Math.max(0, minVal);
+    const q1 = Math.max(min + 0.1, q1Val);
+    const med = Math.max(q1 + 0.1, medVal);
+    const max = Math.max(med + 0.1, maxVal);
+
+    function forward(v) {
+      if (v <= min) return 0;
+      if (v >= max) return 1;
+      if (v <= q1) {
+        return 0.25 * ((v - min) / (q1 - min));
+      } else if (v <= med) {
+        return 0.25 + 0.25 * ((v - q1) / (med - q1));
+      } else {
+        return 0.50 + 0.50 * ((v - med) / (max - med));
+      }
+    }
+
+    function inverse(u) {
+      if (u <= 0) return min;
+      if (u >= 1) return max;
+      if (u <= 0.25) {
+        return min + (u / 0.25) * (q1 - min);
+      } else if (u <= 0.50) {
+        return q1 + ((u - 0.25) / 0.25) * (med - q1);
+      } else {
+        return med + ((u - 0.50) / 0.50) * (max - med);
+      }
+    }
+
+    return { min, q1, med, max, forward, inverse };
+  }
+
+  // Calcul des bornes réelles pour X (textes majeurs) et Y (présence globale)
+  const allMajeurs = currentDeps.map(d => d.taux_majeurs);
+  const allGlobal = currentDeps.map(d => d.taux_global);
+  const minMajeurs = allMajeurs.length ? Math.min(...allMajeurs) : 0;
+  const maxMajeurs = allMajeurs.length ? Math.max(...allMajeurs) : 100;
+  const minGlobal = allGlobal.length ? Math.min(...allGlobal) : 0;
+  const maxGlobal = allGlobal.length ? Math.max(...allGlobal) : 100;
+
+  const medians = computeAttendanceMedians(currentDeps);
+  const scaleX = createQuantileScale(minMajeurs, medians.q1_majeur, medians.median_majeur, maxMajeurs);
+  const scaleY = createQuantileScale(minGlobal, medians.q1_global, medians.median_global, maxGlobal);
+
+  // Préparer les points pour le scatter plot (Axe X = Textes Majeurs projeté, Axe Y = Présence Globale projeté)
   const points = filteredDeputes.map(d => {
     const color = (typeof getGroupColor === 'function') ? getGroupColor(d.groupe) : '#94a3b8';
     return {
-      x: d.taux_majeurs,
-      y: d.taux_global,
+      x: scaleX.forward(d.taux_majeurs),
+      y: scaleY.forward(d.taux_global),
+      realX: d.taux_majeurs,
+      realY: d.taux_global,
       deputy: d,
       backgroundColor: color
     };
   });
+
+  // Graduations affichées : 0%, Q1 (à 25%), Médiane (à 50%), repère intermédiaire 75%, Max (à 100%)
+  const ticksX = [
+    { pos: 0.0, label: `${Math.round(scaleX.min)}% (Min)` },
+    { pos: 0.25, label: `Q1 : ${scaleX.q1}%` },
+    { pos: 0.50, label: `Médiane : ${scaleX.med}%` },
+    { pos: 0.75, label: `${Math.round(scaleX.inverse(0.75))}%` },
+    { pos: 1.0, label: `${Math.round(scaleX.max)}% (Max)` }
+  ];
+
+  const ticksY = [
+    { pos: 0.0, label: `${Math.round(scaleY.min)}% (Min)` },
+    { pos: 0.25, label: `Q1 : ${scaleY.q1}%` },
+    { pos: 0.50, label: `Médiane : ${scaleY.med}%` },
+    { pos: 0.75, label: `${Math.round(scaleY.inverse(0.75))}%` },
+    { pos: 1.0, label: `${Math.round(scaleY.max)}% (Max)` }
+  ];
 
   quadrantChartInstance = new Chart(ctx, {
     type: 'scatter',
@@ -455,6 +542,10 @@ function renderQuadrantChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'nearest',
+        intersect: true
+      },
       onClick: (e, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
@@ -464,29 +555,77 @@ function renderQuadrantChart() {
       },
       scales: {
         x: {
+          min: -0.03,
+          max: 1.03,
+          afterBuildTicks: axis => {
+            axis.ticks = ticksX.map(t => ({ value: t.pos, label: t.label }));
+          },
           title: {
             display: true,
-            text: `Présence sur Textes Majeurs (%) — Médiane : ${medianY}%`,
+            text: `Présence Textes Majeurs (%) — [Q1 : 25% de l'axe = ${scaleX.q1}%, Médiane : 50% = ${scaleX.med}%]`,
             color: '#94a3b8',
             font: { size: 12, weight: '600' }
           },
-          ticks: { color: '#64748b', callback: val => val + '%' },
+          ticks: {
+            color: '#64748b',
+            font: { size: 11, weight: '500' },
+            callback: val => {
+              const match = ticksX.find(t => Math.abs(t.pos - val) < 0.02);
+              return match ? match.label : Math.round(scaleX.inverse(val)) + '%';
+            }
+          },
           grid: {
-            color: context => Math.abs(context.tick.value - Math.round(medianY)) < 1 ? 'rgba(59, 130, 246, 0.5)' : 'rgba(255, 255, 255, 0.05)',
-            lineWidth: context => Math.abs(context.tick.value - Math.round(medianY)) < 1 ? 2 : 1
+            color: context => {
+              const val = context.tick ? context.tick.value : null;
+              if (val !== null && Math.abs(val - 0.50) < 0.01) return 'rgba(59, 130, 246, 0.75)'; // Ligne Médiane
+              if (val !== null && Math.abs(val - 0.25) < 0.01) return 'rgba(124, 58, 237, 0.6)';  // Ligne Q1
+              return 'rgba(255, 255, 255, 0.06)';
+            },
+            lineWidth: context => {
+              const val = context.tick ? context.tick.value : null;
+              return (val !== null && (Math.abs(val - 0.50) < 0.01 || Math.abs(val - 0.25) < 0.01)) ? 2 : 1;
+            },
+            borderDash: context => {
+              const val = context.tick ? context.tick.value : null;
+              return (val !== null && Math.abs(val - 0.25) < 0.01) ? [5, 4] : undefined;
+            }
           }
         },
         y: {
+          min: -0.03,
+          max: 1.03,
+          afterBuildTicks: axis => {
+            axis.ticks = ticksY.map(t => ({ value: t.pos, label: t.label }));
+          },
           title: {
             display: true,
-            text: `Présence Globale (%) — Médiane : ${medianX}%`,
+            text: `Présence Globale (%) — [Q1 : 25% de l'axe = ${scaleY.q1}%, Médiane : 50% = ${scaleY.med}%]`,
             color: '#94a3b8',
             font: { size: 12, weight: '600' }
           },
-          ticks: { color: '#64748b', callback: val => val + '%' },
+          ticks: {
+            color: '#64748b',
+            font: { size: 11, weight: '500' },
+            callback: val => {
+              const match = ticksY.find(t => Math.abs(t.pos - val) < 0.02);
+              return match ? match.label : Math.round(scaleY.inverse(val)) + '%';
+            }
+          },
           grid: {
-            color: context => Math.abs(context.tick.value - Math.round(medianX)) < 1 ? 'rgba(59, 130, 246, 0.5)' : 'rgba(255, 255, 255, 0.05)',
-            lineWidth: context => Math.abs(context.tick.value - Math.round(medianX)) < 1 ? 2 : 1
+            color: context => {
+              const val = context.tick ? context.tick.value : null;
+              if (val !== null && Math.abs(val - 0.50) < 0.01) return 'rgba(59, 130, 246, 0.75)'; // Ligne Médiane
+              if (val !== null && Math.abs(val - 0.25) < 0.01) return 'rgba(124, 58, 237, 0.6)';  // Ligne Q1
+              return 'rgba(255, 255, 255, 0.06)';
+            },
+            lineWidth: context => {
+              const val = context.tick ? context.tick.value : null;
+              return (val !== null && (Math.abs(val - 0.50) < 0.01 || Math.abs(val - 0.25) < 0.01)) ? 2 : 1;
+            },
+            borderDash: context => {
+              const val = context.tick ? context.tick.value : null;
+              return (val !== null && Math.abs(val - 0.25) < 0.01) ? [5, 4] : undefined;
+            }
           }
         }
       },
@@ -496,48 +635,50 @@ function renderQuadrantChart() {
           backgroundColor: 'rgba(15, 23, 42, 0.95)',
           titleColor: '#f8fafc',
           bodyColor: '#cbd5e1',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderColor: 'rgba(255, 255, 255, 0.12)',
           borderWidth: 1,
           padding: 12,
+          displayColors: false,
           callbacks: {
             title: items => {
               if (!items || items.length === 0) return '';
               const targetPoint = points[items[0].dataIndex];
-              const samePoints = points.filter(p => Math.abs(p.x - targetPoint.x) < 0.05 && Math.abs(p.y - targetPoint.y) < 0.05);
-              if (samePoints.length > 1) {
-                return `👥 ${samePoints.length} députés (${targetPoint.x}% majeurs, ${targetPoint.y}% global) :`;
-              }
               const dep = targetPoint.deputy;
               return `${dep.civ} ${dep.nom} (${dep.groupe})`;
             },
             label: item => {
               const targetPoint = points[item.dataIndex];
-              const samePoints = points.filter(p => Math.abs(p.x - targetPoint.x) < 0.05 && Math.abs(p.y - targetPoint.y) < 0.05);
-              
-              if (samePoints.length > 1) {
-                // Éviter de répéter le bloc si Chart.js déclenche label pour plusieurs items hover
-                if (item.dataIndex !== points.indexOf(samePoints[0])) {
-                  return null;
-                }
-                const lines = samePoints.slice(0, 12).map(p => {
-                  const qLabel = QUADRANT_CONFIG[p.deputy.quadrant]?.label || p.deputy.quadrant;
-                  return `• ${p.deputy.nom} (${p.deputy.groupe}) — ${qLabel}`;
-                });
-                if (samePoints.length > 12) {
-                  lines.push(`... et ${samePoints.length - 12} autres députés`);
-                }
-                lines.push(`(Cliquez pour sélectionner ${samePoints[0].deputy.nom})`);
-                return lines;
-              }
-
               const dep = targetPoint.deputy;
-              return [
+
+              // Compter uniquement les députés ayant EXACTEMENT les mêmes scores (arrondis à 0.1%)
+              const strictlyIdentical = points.filter(p =>
+                p !== targetPoint &&
+                Math.abs(p.realX - targetPoint.realX) < 0.1 &&
+                Math.abs(p.realY - targetPoint.realY) < 0.1
+              );
+
+              const lines = [
                 `Circonscription : ${dep.circo || dep.departement || 'Non renseignée'}`,
                 `⭐ Textes Majeurs : ${dep.taux_majeurs}% (${dep.majeurs_votes} / ${dep.majeurs_possibles})`,
                 `🌐 Présence Globale : ${dep.taux_global}% (${dep.votes} / ${dep.scrutins_possibles})`,
                 `📋 Procuration : ${dep.taux_delegation}% des votes`,
                 `Catégorie : ${QUADRANT_CONFIG[dep.quadrant]?.label || dep.quadrant}`
               ];
+
+              if (strictlyIdentical.length > 0) {
+                lines.push('');
+                lines.push(`ℹ️ Même score partagé avec ${strictlyIdentical.length} autre(s) député(s) :`);
+                strictlyIdentical.slice(0, 3).forEach(p => {
+                  lines.push(`  • ${p.deputy.nom} (${p.deputy.groupe})`);
+                });
+                if (strictlyIdentical.length > 3) {
+                  lines.push(`  ... et ${strictlyIdentical.length - 3} autres`);
+                }
+              }
+
+              lines.push('');
+              lines.push('👉 Cliquez pour ouvrir sa fiche détaillée');
+              return lines;
             }
           }
         }
@@ -765,11 +906,14 @@ function renderDeputyDetailCard(dep) {
         </div>
       </div>
 
-      <!-- Bouton d'export Fiche Citoyenne HD -->
+      <!-- Boutons d'actions Fiche Citoyenne HD & Lien AN -->
       <div class="profile-actions">
         <button type="button" class="btn-share-deputy" onclick="shareDeputyAttendance('${dep.id}')">
           📸 Exporter la Fiche Citoyenne HD
         </button>
+        <a href="https://www.assemblee-nationale.fr/dyn/deputes/${dep.id}" target="_blank" rel="noopener noreferrer" class="btn-an-link" title="Consulter la fiche officielle de ${dep.nom} sur assemblee-nationale.fr">
+          🏛️ Fiche officielle Assemblée nationale ↗
+        </a>
       </div>
     </div>
   `;

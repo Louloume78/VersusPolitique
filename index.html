@@ -31,8 +31,9 @@
       <!-- CONTRÔLES GLOBAUX COMPACTS (Actifs sur les 4 outils, masqués sur l'accueil) -->
       <div class="header-controls" id="globalControlsBar" style="display: none;">
         <div class="scope-toggle-pill" role="group" aria-label="Portée des scrutins">
-          <button type="button" class="scope-pill-btn active" id="btnFilterMajor" onclick="setGlobalMajorFilter(true)" title="Textes majeurs : budgets, motions, réformes emblématiques">⭐ Majeurs</button>
-          <button type="button" class="scope-pill-btn" id="btnFilterAll" onclick="setGlobalMajorFilter(false)" title="Tous les scrutins publics y compris amendements ordinaires">Tous</button>
+          <button type="button" class="scope-pill-btn active" id="btnFilterMajor" onclick="setGlobalMajorFilter('MAJOR')" title="Textes majeurs : budgets, motions, réformes emblématiques">⭐ Majeurs</button>
+          <button type="button" class="scope-pill-btn" id="btnFilterPivot" onclick="setGlobalMajorFilter('PIVOT')" title="Débats clés & amendements disputés" style="display: none;">⚡ Débats Clés</button>
+          <button type="button" class="scope-pill-btn" id="btnFilterAll" onclick="setGlobalMajorFilter('ALL')" title="Tous les scrutins publics y compris amendements ordinaires">Tous</button>
         </div>
         <!-- Toggle Échelle : 11 Groupes / Coalitions (Chantier 5) -->
         <div class="scale-toggle-pill" role="group" aria-label="Échelle d'analyse">
@@ -629,16 +630,6 @@
           </button>
         </div>
 
-        <!-- Mots-clés suggérés en 1 clic -->
-        <div class="quick-keywords-bar">
-          <span class="quick-kw-label">Recherches fréquentes :</span>
-          <button type="button" class="quick-kw-chip" onclick="quickSearchScrutin('immigration')">Immigration</button>
-          <button type="button" class="quick-kw-chip" onclick="quickSearchScrutin('budget')">Budget</button>
-          <button type="button" class="quick-kw-chip" onclick="quickSearchScrutin('retraites')">Retraites</button>
-          <button type="button" class="quick-kw-chip" onclick="quickSearchScrutin('motion')">Motion de censure</button>
-          <button type="button" class="quick-kw-chip" onclick="quickSearchScrutin('sécurité')">Sécurité</button>
-        </div>
-
         <!-- Tiroir de filtres avancés repliable -->
         <div class="advanced-filters-drawer" id="dtAdvancedFilters">
           <div class="advanced-filters-grid">
@@ -664,13 +655,6 @@
                 <option value="adopte">Adopté uniquement</option>
                 <option value="rejete">Rejeté uniquement</option>
               </select>
-            </div>
-            <div class="filter-item">
-              <label>Portée :</label>
-              <div class="mini-segmented">
-                <button type="button" class="filter-chip-btn" id="dtFilterAll" onclick="applyPresetFilter('ALL', this)">Tous</button>
-                <button type="button" class="filter-chip-btn active" id="dtFilterMajor" onclick="applyPresetFilter('MAJOR', this)">⭐ Majeurs</button>
-              </div>
             </div>
           </div>
         </div>
@@ -808,6 +792,8 @@
                 <span class="q-pill q-pill-marathonien">🌙 Marathoniens (Top 30)</span>
                 <span class="q-pill q-pill-fantome">👻 Décrochage (Flop 30)</span>
                 <span class="q-pill q-pill-standard">👤 Activité Régulière</span>
+                <span class="q-pill q-pill-mediane">━ Médiane (50%)</span>
+                <span class="q-pill q-pill-quartile">┅ 1ᵉʳ Quartile Q1 (25%)</span>
               </div>
             </div>
             <div class="quadrant-canvas-wrap">
