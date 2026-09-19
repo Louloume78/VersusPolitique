@@ -4,267 +4,407 @@
   <meta charset="UTF-8">
   <title>Observatoire des Votes - Assemblée Nationale</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root {
-      --bg-color: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      --border-color: #e2e8f0;
-      --pour-color: #16a34a;
-      --pour-bg: #dcfce7;
-      --contre-color: #dc2626;
-      --contre-bg: #fee2e2;
-      --diff-color: #eab308;
-      --primary: #2563eb;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      margin: 1.5rem 2rem;
-      background: var(--bg-color);
-      color: var(--text-main);
-    }
-    h1 { margin: 0 0 0.25rem 0; font-size: 1.6rem; }
-    .subtitle { color: var(--text-muted); margin-top: 0; margin-bottom: 1.25rem; font-size: 0.95rem; }
-
-    .tabs-nav {
-      display: flex;
-      gap: 0.5rem;
-      border-bottom: 2px solid var(--border-color);
-      margin-bottom: 1.5rem;
-    }
-    .tab-btn {
-      background: none;
-      border: none;
-      padding: 0.75rem 1.25rem;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      margin-bottom: -2px;
-      transition: all 0.2s ease;
-    }
-    .tab-btn.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
-      background: #eff6ff;
-      border-radius: 6px 6px 0 0;
-    }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    .card {
-      background: var(--card-bg);
-      padding: 1.25rem 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      margin-bottom: 1.5rem;
-    }
-    .filters-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    .filter-item { display: flex; flex-direction: column; gap: 0.35rem; }
-    label { font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em; }
-    select, input {
-      padding: 0.55rem;
-      border-radius: 6px;
-      border: 1px solid #cbd5e1;
-      font-size: 0.9rem;
-      background: #fff;
-    }
-
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-color); text-align: left; }
-    th { background: #f1f5f9; font-weight: 600; font-size: 0.85rem; color: #334155; user-select: none; }
-    th.sortable { cursor: pointer; }
-    th.sortable:hover { background: #e2e8f0; }
-
-    .stacked-bar-container {
-      width: 100%;
-      background: #e2e8f0;
-      border-radius: 4px;
-      overflow: hidden;
-      height: 1.4rem;
-      display: flex;
-    }
-    .bar-segment {
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 0.75rem;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-    .segment-pour { background: var(--pour-color); }
-    .segment-contre { background: var(--contre-color); }
-    .segment-diff { background: var(--diff-color); color: #78350f; }
-
-    .cohesion-badge {
-      display: inline-block;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      background: #e0f2fe;
-      color: #0369a1;
-    }
-
-    /* Heatmap styling */
-    .heatmap-wrapper { overflow-x: auto; margin-top: 1rem; }
-    .heatmap-table { border-collapse: separate; border-spacing: 3px; width: auto; margin: 0 auto; }
-    .heatmap-table th, .heatmap-table td { padding: 0.6rem 0.5rem; text-align: center; font-size: 0.8rem; border: none; }
-    .heatmap-table th { background: #f8fafc; font-weight: 600; min-width: 90px; }
-    .heatmap-table th.sortable-hm { cursor: pointer; }
-    .heatmap-table th.sortable-hm:hover { background: #e2e8f0; }
-    .heatmap-cell { border-radius: 4px; font-weight: 700; min-width: 60px; height: 38px; }
-    .heatmap-empty { background: transparent !important; }
-
-    .chart-container-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-    }
-    @media (max-width: 900px) {
-      .chart-container-grid { grid-template-columns: 1fr; }
-    }
-
-    /* Styles pour les filtres chips & cartes scrutins */
-    .filter-chips-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      align-items: center;
-      margin-top: 0.5rem;
-      margin-bottom: 1.25rem;
-    }
-    .filter-chip-btn {
-      padding: 0.4rem 0.85rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      border-radius: 20px;
-      border: 1px solid var(--border-color);
-      background: #f1f5f9;
-      color: var(--text-main);
-      cursor: pointer;
-      transition: all 0.15s ease-in-out;
-    }
-    .filter-chip-btn:hover {
-      background: #e2e8f0;
-    }
-    .filter-chip-btn.active {
-      background: var(--primary);
-      color: #ffffff;
-      border-color: var(--primary);
-      font-weight: 600;
-    }
-
-    .scrutins-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.85rem;
-    }
-    .vote-item-card {
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 1rem 1.25rem;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .vote-item-card.pour-pour { border-left: 4px solid var(--pour-color); }
-    .vote-item-card.contre-contre { border-left: 4px solid var(--contre-color); }
-    .vote-item-card.desaccord { border-left: 4px solid var(--diff-color); }
-
-    .vote-tag-badge {
-      display: inline-block;
-      font-weight: 700;
-      font-size: 0.75rem;
-      padding: 0.15rem 0.45rem;
-      border-radius: 4px;
-    }
-    .vote-tag-badge.pour { background: var(--pour-bg); color: var(--pour-color); }
-    .vote-tag-badge.contre { background: var(--contre-bg); color: var(--contre-color); }
-    .vote-tag-badge.abstention { background: #fef3c7; color: #b45309; }
-    
-    .outcome-badge {
-    display: inline-flex;
-    align-items: center;
-    font-weight: 700;
-    font-size: 0.75rem;
-    padding: 0.2rem 0.55rem;
-    border-radius: 4px;
-    letter-spacing: 0.03em;
-  }
-  .outcome-badge.adopte {
-    background: var(--pour-bg);
-    color: var(--pour-color);
-    border: 1px solid rgba(22, 163, 74, 0.25);
-  }
-  .outcome-badge.rejete {
-    background: var(--contre-bg);
-    color: var(--contre-color);
-    border: 1px solid rgba(220, 38, 38, 0.25);
-  }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <h1>Observatoire des Votes Parlementaires</h1>
-  <p class="subtitle" id="global-kpi">Chargement des données...</p>
-
-<nav class="tabs-nav">
-    <button class="tab-btn active" onclick="switchTab('tab-overview')">Vue d'ensemble par Groupe</button>
-    <button class="tab-btn" onclick="switchTab('tab-heatmap')">Matrice Globale (Heatmap)</button>
-    <button class="tab-btn" onclick="switchTab('tab-radar-time')">Analyses Thématiques & Temporelles</button>
-    <button class="tab-btn" onclick="switchTab('tab-detailed')">Explorateur Scrutin par Scrutin</button>
-    <button class="tab-btn" onclick="switchTab('tab-about')">ℹ️ À propos & Méthodologie</button>
-  </nav>
-
-  <!-- ONGLET 1 : VUE D'ENSEMBLE -->
-  <div id="tab-overview" class="tab-content active">
-    <div class="card">
-      <div class="filters-grid">
-        <div class="filter-item">
-          <label for="ovRefGroup">Groupe de référence</label>
-          <select id="ovRefGroup" onchange="renderOverview()"></select>
-        </div>
-        <div class="filter-item">
-          <label for="ovDateRange">Période</label>
-          <select id="ovDateRange" onchange="renderOverview()">
-            <option value="ALL">Toutes les législatures (16e et 17e)</option>
-            <option value="LEG_17">17e Législature stricte</option>
-            <option value="LEG_16">16e Législature stricte</option>
-          </select>
-        </div>
-        <div class="filter-item">
-          <label for="ovCommission">Thématique</label>
-          <select id="ovCommission" onchange="renderOverview()">
-            <option value="ALL">Toutes les thématiques</option>
-          </select>
+  <!-- EN-TÊTE ÉPURÉ & NAVIGATION PRINCIPALE -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand" onclick="switchTab('tab-home')" title="Retour à l'accueil citoyen">
+        <span class="brand-icon">🏛️</span>
+        <div class="brand-text">
+          <span class="brand-title">Observatoire des Votes</span>
+          <span class="brand-subtitle">Assemblée nationale • 16ᵉ & 17ᵉ Législatures</span>
         </div>
       </div>
 
-      <div style="margin-bottom: 1rem; font-size: 0.9rem;">
-        Cohésion moyenne du groupe de référence : <span class="cohesion-badge" id="refGroupCohesion">-</span>
+      <nav class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('tab-home')">🏠 Accueil</button>
+        <button class="tab-btn" onclick="switchTab('tab-overview')">📊 Alliances</button>
+        <button class="tab-btn" onclick="switchTab('tab-heatmap')">🗺️ Matrice Globale</button>
+        <button class="tab-btn" onclick="switchTab('tab-radar-time')">⚔️ Face-à-face</button>
+        <button class="tab-btn" onclick="switchTab('tab-detailed')">🔍 Explorateur</button>
+        <button class="tab-btn" onclick="switchTab('tab-attendance')">⏱️ Assiduité</button>
+      </nav>
+
+      <!-- CONTRÔLES GLOBAUX COMPACTS (Actifs sur les 4 outils, masqués sur l'accueil) -->
+      <div class="header-controls" id="globalControlsBar" style="display: none;">
+        <div class="scope-toggle-pill" role="group" aria-label="Portée des scrutins">
+          <button type="button" class="scope-pill-btn active" id="btnFilterMajor" onclick="setGlobalMajorFilter(true)" title="Textes majeurs : budgets, motions, réformes emblématiques">⭐ Majeurs</button>
+          <button type="button" class="scope-pill-btn" id="btnFilterAll" onclick="setGlobalMajorFilter(false)" title="Tous les scrutins publics y compris amendements ordinaires">Tous</button>
+        </div>
+        <!-- Toggle Échelle : 11 Groupes / Coalitions (Chantier 5) -->
+        <div class="scale-toggle-pill" role="group" aria-label="Échelle d'analyse">
+          <button type="button" class="scale-pill-btn active" id="btnScaleGroups" onclick="setScaleMode('groups')" title="Analyser par groupes politiques individuels (11 groupes)">👥 11 Groupes</button>
+          <button type="button" class="scale-pill-btn" id="btnScaleCoalitions" onclick="setScaleMode('coalitions')" title="Analyser par grandes coalitions parlementaires">🏛️ Coalitions</button>
+        </div>
+        <button type="button" class="btn-config-coalitions" id="btnOpenCoalitionsModal" onclick="openCoalitionsModal()" style="display: none;" title="Créer et organiser vos coalitions en glisser-déposer">⚙️ Configurer</button>
+        <div class="period-select-wrapper">
+          <select id="globalPeriodFilter" class="period-select-compact" onchange="onGlobalPeriodChange()" title="Filtrer par législature">
+            <option value="ALL" selected>Toutes législatures</option>
+            <option value="LEG_17">17ᵉ Législature (2024-)</option>
+            <option value="LEG_16">16ᵉ Législature (2022-2024)</option>
+          </select>
+        </div>
+        <span class="header-count-badge" id="globalFilteredCount" title="Nombre de scrutins dans le périmètre actuel"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ONGLET 0 : PAGE D'ACCUEIL CITOYENNE AÉRÉE (ACTIF PAR DÉFAUT) -->
+  <div id="tab-home" class="tab-content active">
+    <div class="home-hero-container">
+      <!-- Badge Citoyen -->
+      <div class="home-hero-badge">
+        <span>🏛️</span> Observatoire Citoyen Indépendant
+      </div>
+
+      <!-- Titre Aéré & Accueillant -->
+      <h1 class="home-hero-title">
+        Ce que votent <span class="accent-text">véritablement</span> vos députés
+      </h1>
+
+      <!-- Description spacieuse -->
+      <p class="home-hero-desc">
+        Loin des déclarations médiatiques et des postures de tribune, explorez les scrutins publics officiels de l'Assemblée nationale. Cartographiez les convergences réelles, les fronts de rejet partagés et les véritables fractures démocratiques de l'hémicycle.
+      </p>
+
+      <!-- Compteurs clés en direct (Cards flottantes aérées) -->
+      <div class="home-kpi-grid">
+        <div class="home-kpi-card">
+          <span class="home-kpi-icon">📜</span>
+          <div class="home-kpi-num" id="homeStatTotal">12 539</div>
+          <div class="home-kpi-label">Scrutins répertoriés</div>
+        </div>
+        <div class="home-kpi-card highlight">
+          <span class="home-kpi-icon">⭐</span>
+          <div class="home-kpi-num" id="homeStatMajors">499</div>
+          <div class="home-kpi-label">Textes majeurs analysés</div>
+        </div>
+        <div class="home-kpi-card">
+          <span class="home-kpi-icon">🏛️</span>
+          <div class="home-kpi-num">11</div>
+          <div class="home-kpi-label">Groupes politiques</div>
+        </div>
+        <div class="home-kpi-card">
+          <span class="home-kpi-icon">⚖️</span>
+          <div class="home-kpi-num">100%</div>
+          <div class="home-kpi-label">Open Data officiel AN</div>
+        </div>
+      </div>
+
+      <!-- Section Parcours Thématique : Sticky Stack Apple -->
+      <div class="home-section-header">
+        <div class="home-section-eyebrow">PARCOURS THÉMATIQUE</div>
+        <h2>Choisissez votre angle d'exploration</h2>
+        <p>Cinq parcours immersifs conçus pour répondre directement aux grandes interrogations citoyennes</p>
+      </div>
+
+      <div class="home-sticky-stack">
+        
+        <!-- CARTE 1 : ALLIANCES -->
+        <div class="home-stack-card card-alliances" style="--stack-idx: 0;" onclick="switchTab('tab-overview')">
+          <div class="stack-card-content">
+            <div class="stack-card-tag">
+              <span class="stack-badge-icon">🤝</span>
+              <span class="stack-badge-label">Coalitions &amp; Proximités</span>
+            </div>
+            <h3 class="stack-card-title">« Mon parti vote-t-il en secret avec ses adversaires ? »</h3>
+            <p class="stack-card-desc">
+              Sélectionnez votre groupe de référence pour analyser ses taux d'accord réels avec l'ensemble des bancs de l'hémicycle. Cartographiez les majorités de projets, les accords de circonstance et les fronts d'opposition irréconciliables.
+            </p>
+            <div class="stack-card-footer">
+              <span class="stack-card-btn">Explorer les Alliances ➔</span>
+            </div>
+          </div>
+          <div class="stack-card-visual">
+            <div class="mockup-window">
+              <div class="mockup-header">
+                <span class="mockup-dot red"></span>
+                <span class="mockup-dot yellow"></span>
+                <span class="mockup-dot green"></span>
+                <span class="mockup-title">Proximités observées • Groupe EPR</span>
+              </div>
+              <div class="mockup-body">
+                <div class="mockup-row">
+                  <span class="mockup-grp">MoDem</span>
+                  <div class="mockup-bar-bg"><div class="mockup-bar-fill fill-green" style="width: 89%;"></div></div>
+                  <span class="mockup-pct">89%</span>
+                </div>
+                <div class="mockup-row">
+                  <span class="mockup-grp">DR (LR)</span>
+                  <div class="mockup-bar-bg"><div class="mockup-bar-fill fill-green" style="width: 74%;"></div></div>
+                  <span class="mockup-pct">74%</span>
+                </div>
+                <div class="mockup-row">
+                  <span class="mockup-grp">RN</span>
+                  <div class="mockup-bar-bg"><div class="mockup-bar-fill fill-amber" style="width: 38%;"></div></div>
+                  <span class="mockup-pct">38%</span>
+                </div>
+                <div class="mockup-row">
+                  <span class="mockup-grp">LFI</span>
+                  <div class="mockup-bar-bg"><div class="mockup-bar-fill fill-blue" style="width: 21%;"></div></div>
+                  <span class="mockup-pct">21%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARTE 2 : MATRICE GLOBALE (HEATMAP) -->
+        <div class="home-stack-card card-heatmap" style="--stack-idx: 1;" onclick="switchTab('tab-heatmap')">
+          <div class="stack-card-content">
+            <div class="stack-card-tag">
+              <span class="stack-badge-icon">🧩</span>
+              <span class="stack-badge-label">Vue d'ensemble complète</span>
+            </div>
+            <h3 class="stack-card-title">« Qui s'entend vraiment avec qui dans l'hémicycle ? »</h3>
+            <p class="stack-card-desc">
+              Visualisez d'un seul coup d'œil la matrice d'accords croisés entre tous les 11 groupes politiques. Basculez entre majorités d'adoption (Pour communs) et fronts de rejet (Contre communs) pour déceler la dynamique globale des forces.
+            </p>
+            <div class="stack-card-footer">
+              <span class="stack-card-btn">Consulter la Matrice Globale ➔</span>
+            </div>
+          </div>
+          <div class="stack-card-visual">
+            <div class="mockup-window">
+              <div class="mockup-header">
+                <span class="mockup-dot red"></span>
+                <span class="mockup-dot yellow"></span>
+                <span class="mockup-dot green"></span>
+                <span class="mockup-title">Matrice 11 × 11 • Contraste dynamique</span>
+              </div>
+              <div class="mockup-body mockup-heatmap-grid">
+                <div class="mockup-hm-cell hm-label"></div>
+                <div class="mockup-hm-cell hm-th">RN</div>
+                <div class="mockup-hm-cell hm-th">EPR</div>
+                <div class="mockup-hm-cell hm-th">SOC</div>
+                <div class="mockup-hm-cell hm-th">LFI</div>
+
+                <div class="mockup-hm-cell hm-th-left">RN</div>
+                <div class="mockup-hm-cell hm-val hm-diag">-</div>
+                <div class="mockup-hm-cell hm-val hm-mid">38%</div>
+                <div class="mockup-hm-cell hm-val hm-low">24%</div>
+                <div class="mockup-hm-cell hm-val hm-low">18%</div>
+
+                <div class="mockup-hm-cell hm-th-left">EPR</div>
+                <div class="mockup-hm-cell hm-val hm-mid">38%</div>
+                <div class="mockup-hm-cell hm-val hm-diag">-</div>
+                <div class="mockup-hm-cell hm-val hm-mid">46%</div>
+                <div class="mockup-hm-cell hm-val hm-low">21%</div>
+
+                <div class="mockup-hm-cell hm-th-left">SOC</div>
+                <div class="mockup-hm-cell hm-val hm-low">24%</div>
+                <div class="mockup-hm-cell hm-val hm-mid">46%</div>
+                <div class="mockup-hm-cell hm-val hm-diag">-</div>
+                <div class="mockup-hm-cell hm-val hm-high">82%</div>
+
+                <div class="mockup-hm-cell hm-th-left">LFI</div>
+                <div class="mockup-hm-cell hm-val hm-low">18%</div>
+                <div class="mockup-hm-cell hm-val hm-low">21%</div>
+                <div class="mockup-hm-cell hm-val hm-high">82%</div>
+                <div class="mockup-hm-cell hm-val hm-diag">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARTE 3 : FACE-À-FACE & PARTAGE -->
+        <div class="home-stack-card card-radar" style="--stack-idx: 2;" onclick="switchTab('tab-radar-time')">
+          <div class="stack-card-content">
+            <div class="stack-card-tag">
+              <span class="stack-badge-icon">⚔️</span>
+              <span class="stack-badge-label">Duel &amp; Partage Réseaux</span>
+            </div>
+            <h3 class="stack-card-title">« Deux partis rivaux sont-ils si différents ? »</h3>
+            <p class="stack-card-desc">
+              Confrontez deux formations politiques thématique par thématique (Budget, Sécurité, Social, Écologie...). Visualisez les votes partagés dans le temps et générez une carte citoyenne HD personnalisée prête à diffuser sur les réseaux sociaux.
+            </p>
+            <div class="stack-card-footer">
+              <span class="stack-card-btn">Lancer un Face-à-face &amp; Carte HD ➔</span>
+            </div>
+          </div>
+          <div class="stack-card-visual">
+            <div class="mockup-window">
+              <div class="mockup-header">
+                <span class="mockup-dot red"></span>
+                <span class="mockup-dot yellow"></span>
+                <span class="mockup-dot green"></span>
+                <span class="mockup-title">Duel Thématique &amp; Infographie HD</span>
+              </div>
+              <div class="mockup-body mockup-versus-body">
+                <div class="mockup-duel-badges">
+                  <span class="duel-grp-pill grp-a">EPR</span>
+                  <span class="duel-vs-badge">VS</span>
+                  <span class="duel-grp-pill grp-b">RN</span>
+                </div>
+                <div class="mockup-duel-stat">
+                  <span class="duel-score">38%</span>
+                  <span class="duel-score-lbl">d'accord global constaté</span>
+                </div>
+                <div class="mockup-radar-preview">
+                  <div class="radar-bar-item"><span>Économie</span><div class="radar-mini-track"><div class="radar-mini-bar" style="width: 45%;"></div></div></div>
+                  <div class="radar-bar-item"><span>Immigration</span><div class="radar-mini-track"><div class="radar-mini-bar" style="width: 68%;"></div></div></div>
+                  <div class="radar-bar-item"><span>Social &amp; Santé</span><div class="radar-mini-track"><div class="radar-mini-bar" style="width: 22%;"></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARTE 4 : EXPLORATEUR DE SCRUTINS -->
+        <div class="home-stack-card card-explorer" style="--stack-idx: 3;" onclick="switchTab('tab-detailed')">
+          <div class="stack-card-content">
+            <div class="stack-card-tag">
+              <span class="stack-badge-icon">🔎</span>
+              <span class="stack-badge-label">Recherche chirurgicale</span>
+            </div>
+            <h3 class="stack-card-title">« Qui a voté quoi sur la loi Retraites ou Immigration ? »</h3>
+            <p class="stack-card-desc">
+              Moteur de recherche exhaustif sur plus de 12 500 scrutins officiels. Filtrez par mot-clé, statut d'adoption ou groupe parlementaire, et accédez instantanément à la frise panoramique des positions des 11 groupes pour chaque scrutin.
+            </p>
+            <div class="stack-card-footer">
+              <span class="stack-card-btn">Rechercher une loi dans l'Explorateur ➔</span>
+            </div>
+          </div>
+          <div class="stack-card-visual">
+            <div class="mockup-window">
+              <div class="mockup-header">
+                <span class="mockup-dot red"></span>
+                <span class="mockup-dot yellow"></span>
+                <span class="mockup-dot green"></span>
+                <span class="mockup-title">Scrutin officiel • Décryptage immédiat</span>
+              </div>
+              <div class="mockup-body">
+                <div class="mockup-search-input">🔍 "projet de loi immigration"</div>
+                <div class="mockup-vote-card">
+                  <div class="mockup-vote-head">
+                    <span class="mockup-vote-tag">Loi Immigration (Scrutin n°42)</span>
+                    <span class="mockup-outcome-adopte">ADOPTÉ</span>
+                  </div>
+                  <div class="mockup-chips-strip">
+                    <span class="panoramic-chip pour"><strong>RN</strong></span>
+                    <span class="panoramic-chip pour"><strong>EPR</strong></span>
+                    <span class="panoramic-chip pour"><strong>DR</strong></span>
+                    <span class="panoramic-chip contre"><strong>SOC</strong></span>
+                    <span class="panoramic-chip contre"><strong>LFI</strong></span>
+                    <span class="panoramic-chip contre"><strong>Eco</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARTE 5 : ASSIDUITÉ & MOBILISATION -->
+        <div class="home-stack-card card-attendance" style="--stack-idx: 4;" onclick="switchTab('tab-attendance')">
+          <div class="stack-card-content">
+            <div class="stack-card-tag">
+              <span class="stack-badge-icon">⏱️</span>
+              <span class="stack-badge-label">Présence &amp; Mobilisation</span>
+            </div>
+            <h3 class="stack-card-title">« Nos élus sont-ils vraiment présents dans l'Hémicycle ? »</h3>
+            <p class="stack-card-desc">
+              Distinguez la figuration du travail de fond : comparez la présence sur les textes majeurs et les marathons d'amendements, découvrez le recours à la procuration et évaluez l'assiduité de chaque député dans la matrice quadrant.
+            </p>
+            <div class="stack-card-footer">
+              <span class="stack-card-btn">Consulter l'Assiduité des Élus ➔</span>
+            </div>
+          </div>
+          <div class="stack-card-visual">
+            <div class="mockup-window">
+              <div class="mockup-header">
+                <span class="mockup-dot red"></span>
+                <span class="mockup-dot yellow"></span>
+                <span class="mockup-dot green"></span>
+                <span class="mockup-title">Baromètre de mobilisation</span>
+              </div>
+              <div class="mockup-body">
+                <div class="mockup-row">
+                  <span class="mockup-grp">RN</span>
+                  <div class="mockup-bar-bg"><div class="mockup-bar-fill fill-green" style="width: 40.1%;"></div></div>
+                  <span class="mockup-pct">40%</span>
+                </div>
+                <div class="mockup-row">
+                  <span class="mockup-grp">LFI</span>
+                  <div class="mockup-bar-bg"><div class="mockup-bar-fill fill-green" style="width: 39.0%;"></div></div>
+                  <span class="mockup-pct">39%</span>
+                </div>
+                <div class="mockup-row">
+                  <span class="mockup-grp">EPR</span>
+                  <div class="mockup-bar-bg"><div class="mockup-bar-fill fill-blue" style="width: 28.2%;"></div></div>
+                  <span class="mockup-pct">28%</span>
+                </div>
+                <div class="mockup-chips-strip" style="margin-top: 0.5rem; font-size: 0.72rem; color: #94a3b8; justify-content: center; display: flex; gap: 0.4rem;">
+                  <span>🏛️ Piliers</span> • <span>🎯 Stratèges</span> • <span>🌙 Marathoniens</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ONGLET 1 : ALLIANCES & PROXIMITÉS -->
+  <div id="tab-overview" class="tab-content">
+    <div class="card">
+      
+      <!-- En-tête épuré avec Titre interactif -->
+      <div class="clean-tool-header">
+        <div class="clean-title-row">
+          <h2 class="clean-tool-title">
+            <span class="clean-title-label" id="ovInteractiveTitleLabel">Alliances de</span>
+            <span class="interactive-group-picker">
+              <span class="group-color-dot" id="ovGroupColorDot"></span>
+              <select id="ovRefGroup" class="interactive-group-select" onchange="renderOverview()"></select>
+            </span>
+          </h2>
+          <div class="clean-header-actions">
+            <div class="theme-select-wrapper">
+              <select id="ovCommission" class="compact-theme-select" onchange="renderOverview()" title="Filtrer par thématique officielle">
+                <option value="ALL">Toutes les thématiques</option>
+              </select>
+            </div>
+            <button type="button" class="clean-help-btn" data-guide-target="guide-overview" onclick="toggleContextGuide('guide-overview')" title="Clé de lecture et seuils d'accord">
+              <span>💡</span> Clé de lecture
+            </button>
+          </div>
+        </div>
+
+        <!-- Clé de lecture compacte non-intrusive -->
+        <div id="guide-overview" class="clean-guide-drawer">
+          <div class="clean-guide-body">
+            <div class="clean-guide-item">
+              <strong>💡 Repère des 70% :</strong> Le consensus technique sur amendements ordinaires produit mécaniquement 60-70% d'accord. Les vraies alliances s'observent au-delà de 75% ou avec <strong>« ⭐ Textes majeurs »</strong>.
+            </div>
+            <div class="clean-guide-item">
+              <strong>Couleurs :</strong> <span style="color:var(--pour-color); font-weight:700;">🟢 Vert</span> (Pour communs) • <span style="color:var(--contre-color); font-weight:700;">🔵 Bleu</span> (Contre communs) • <span style="color:var(--diff-color); font-weight:700;">🟠 Ambre</span> (Positions opposées).
+            </div>
+          </div>
+        </div>
+
+        <!-- Cockpit unifié : Identité du groupe & Insights clés -->
+        <div class="group-cockpit-bar" id="ovCockpitBar">
+          <div class="cockpit-meta-group">
+            <span class="cockpit-pill" id="refGroupSeatsInfo">166 sièges</span>
+            <span class="cockpit-pill">Discipline : <strong id="refGroupCohesion" class="cohesion-val">-</strong></span>
+          </div>
+          <div class="cockpit-insights" id="ovDynamicSummary">
+            Calcul des positions...
+          </div>
+        </div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th class="sortable" onclick="setSortOverview('spectrum')" style="width: 22%;">Groupe</th>
-            <th class="sortable" onclick="setSortOverview('pour')" style="width: 42%;">Répartition des Votes</th>
-            <th class="sortable" onclick="setSortOverview('diff')" style="width: 24%;">Pour / Contre / Désaccord</th>
-            <th style="width: 12%;">Cohésion</th>
+            <th class="sortable" onclick="setSortOverview('spectrum')" style="width: 25%;">Groupe parlementaire</th>
+            <th class="sortable" onclick="setSortOverview('pour')" style="width: 40%;">Répartition des Votes</th>
+            <th class="sortable" onclick="setSortOverview('diff')" style="width: 23%;">Pour / Contre / Opposés</th>
+            <th style="width: 12%;">Discipline</th>
           </tr>
         </thead>
         <tbody id="ovTableBody"></tbody>
@@ -275,24 +415,37 @@
   <!-- ONGLET 2 : HEATMAP (Triangle inférieur) -->
   <div id="tab-heatmap" class="tab-content">
     <div class="card">
-      <div class="filters-grid" style="max-width: 600px;">
-        <div class="filter-item">
-          <label for="hmDateRange">Période</label>
-          <select id="hmDateRange" onchange="renderHeatmap()">
-            <option value="ALL">Toutes les législatures</option>
-            <option value="LEG_17">17e Législature stricte</option>
-            <option value="LEG_16">16e Législature stricte</option>
-          </select>
+      
+      <!-- En-tête épuré Matrice Globale -->
+      <div class="clean-tool-header">
+        <div class="clean-title-row">
+          <h2 class="clean-tool-title">Matrice Globale des Accords</h2>
+          <div class="clean-header-actions">
+            <div class="segmented-control compact-seg">
+              <button type="button" class="seg-btn active" onclick="setHeatmapMetric('POUR_POUR')">🟢 Pour communs</button>
+              <button type="button" class="seg-btn" onclick="setHeatmapMetric('TOTAL_ACCORD')">🔵 Accord global</button>
+              <button type="button" class="seg-btn" onclick="setHeatmapMetric('CONTRE_CONTRE')">🔷 Contre communs</button>
+            </div>
+            <input type="hidden" id="hmMetric" value="POUR_POUR">
+            <button type="button" class="clean-help-btn" data-guide-target="guide-heatmap" onclick="toggleContextGuide('guide-heatmap')" title="Comment lire la matrice">
+              <span>💡</span> Clé de lecture
+            </button>
+          </div>
         </div>
-        <div class="filter-item">
-          <label for="hmMetric">Métrique affichée</label>
-          <select id="hmMetric" onchange="renderHeatmap()">
-            <option value="POUR_POUR">Adhésion Positive (% POUR / POUR)</option>
-            <option value="TOTAL_ACCORD">Accord Global (% POUR + % CONTRE)</option>
-            <option value="CONTRE_CONTRE">Rejet Conjoint (% CONTRE / CONTRE)</option>
-          </select>
+
+        <!-- Clé de lecture compacte -->
+        <div id="guide-heatmap" class="clean-guide-drawer">
+          <div class="clean-guide-body">
+            <div class="clean-guide-item">
+              <strong>💡 Lecture croisée :</strong> Chaque case croise deux groupes. Plus la couleur est vive, plus l'accord est fort. L'étalonnage dynamique min-max révèle les contrastes réels.
+            </div>
+            <div class="clean-guide-item">
+              <strong>Astuce :</strong> Cliquez sur l'en-tête d'un groupe pour trier toute la matrice selon ses proximités • Survolez une case pour voir le détail.
+            </div>
+          </div>
         </div>
       </div>
+
       <div class="heatmap-wrapper" id="heatmapContainer"></div>
     </div>
   </div>
@@ -300,541 +453,701 @@
   <!-- ONGLET 3 : ANALYSES THÉMATIQUES & TEMPORELLES -->
   <div id="tab-radar-time" class="tab-content">
     <div class="card">
-      <div class="filters-grid">
-        <div class="filter-item">
-          <label for="compGroupA">Groupe 1</label>
-          <select id="compGroupA" onchange="renderCharts()"></select>
+      
+      <!-- En-tête épuré Face-à-face avec Duel interactif -->
+      <div class="clean-tool-header">
+        <div class="clean-title-row">
+          <h2 class="clean-tool-title duel-title-group">
+            <span class="clean-title-label">Face-à-face :</span>
+            <span class="interactive-group-picker">
+              <span class="group-color-dot" id="duelGroupColorDotA"></span>
+              <select id="compGroupA" class="interactive-group-select" onchange="renderCharts()"></select>
+            </span>
+            <button type="button" class="duel-swap-btn" onclick="swapDuelGroups()" title="Inverser les deux formations">⇄</button>
+            <span class="interactive-group-picker">
+              <span class="group-color-dot" id="duelGroupColorDotB"></span>
+              <select id="compGroupB" class="interactive-group-select" onchange="renderCharts()"></select>
+            </span>
+          </h2>
+          <div class="clean-header-actions">
+            <button type="button" class="share-card-trigger-btn compact" onclick="openShareModal()" title="Générer une infographie citoyenne certifiée">
+              <span>📸</span> Carte HD
+            </button>
+            <button type="button" class="clean-help-btn" data-guide-target="guide-radar" onclick="toggleContextGuide('guide-radar')" title="Comprendre le comparateur direct">
+              <span>💡</span> Clé de lecture
+            </button>
+          </div>
         </div>
-        <div class="filter-item">
-          <label for="compGroupB">Groupe 2</label>
-          <select id="compGroupB" onchange="renderCharts()"></select>
-        </div>
-        <div class="filter-item">
-          <label for="chartDateRange">Période</label>
-          <select id="chartDateRange" onchange="renderCharts()">
-            <option value="ALL">Toutes les dates</option>
-            <option value="LEG_17">17e Législature stricte</option>
-            <option value="LEG_16">16e Législature stricte</option>
-          </select>
+
+        <!-- Clé de lecture compacte -->
+        <div id="guide-radar" class="clean-guide-drawer">
+          <div class="clean-guide-body">
+            <div class="clean-guide-item">
+              <strong>💡 Comparateur direct :</strong> Analyse des votes partagés en soutien (« Pour »), en opposition commune (« Contre ») et désaccords nets. Le radar détaille par thématique, la courbe retrace l'évolution temporelle.
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="chart-container-grid">
-        <div>
-          <h3 style="font-size: 1rem; text-align: center;">Taux d'accord par Commission (%)</h3>
+      <!-- Synthèse dynamique épurée en élément discret (rétro-compatible pour charts.js) -->
+      <div id="chartsDynamicSummary" style="display: none;"></div>
+
+      <!-- Bloc Face-à-face moderne (Hero Score Card) -->
+      <div id="simpleComparisonContainer" style="display: block; margin-top: 1.25rem; margin-bottom: 1.5rem;">
+        <div class="face-score-hero-card">
+          <div class="face-score-top">
+            <div>
+              <span class="face-score-eyebrow">Comparateur direct</span>
+              <h3 class="face-score-names" id="simpleCardTitle">Groupe A &amp; Groupe B</h3>
+            </div>
+            <div class="face-score-badge" id="simpleTotalAccordBadge">
+              Accord global : 0%
+            </div>
+          </div>
+
+          <div class="face-metrics-grid">
+            <div class="face-metric-cell metric-pour">
+              <span class="metric-label">Votes « Pour » communs</span>
+              <div class="metric-value" id="simplePourVal">0%</div>
+              <span class="metric-hint" id="simplePourDesc">Adoptions conjointes</span>
+            </div>
+
+            <div class="face-metric-cell metric-contre">
+              <span class="metric-label">Oppositions communes</span>
+              <div class="metric-value" id="simpleContreVal">0%</div>
+              <span class="metric-hint" id="simpleContreDesc">Rejets conjoints</span>
+            </div>
+
+            <div class="face-metric-cell metric-diff">
+              <span class="metric-label">Divergences nettes</span>
+              <div class="metric-value" id="simpleDiffVal">0%</div>
+              <span class="metric-hint" id="simpleDiffDesc">Positions opposées</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphiques avancés (Option B : Côte à côte aéré) -->
+      <div class="chart-container-grid" id="expertChartsContainer">
+        <div class="chart-card-box">
+          <div class="chart-card-header">
+            <h4>Taux de votes « Pour » communs par thématique</h4>
+            <span class="chart-badge">Analyse sectorielle</span>
+          </div>
           <canvas id="radarChart"></canvas>
         </div>
-        <div>
-          <h3 style="font-size: 1rem; text-align: center;">Évolution de l'accord dans le temps (Mois par mois)</h3>
+        <div class="chart-card-box">
+          <div class="chart-card-header">
+            <h4>Évolution de l'accord global dans le temps</h4>
+            <span class="chart-badge">Mois par mois</span>
+          </div>
           <canvas id="timelineChart"></canvas>
         </div>
       </div>
     </div>
   </div>
 
-<!-- ONGLET 4 : EXPLORATEUR DÉTAILLÉ -->
-<div id="tab-detailed" class="tab-content">
-  <div class="card">
-    <div class="filters-grid">
-      <div class="filter-item">
-        <label for="dtGroupA">Groupe 1</label>
-        <select id="dtGroupA" onchange="renderDetailed()"></select>
+  <!-- POP-UP MODALE CARTE CITOYENNE PARTAGEABLE (CANVAS 2D) -->
+  <div class="modal-backdrop" id="shareModal" onclick="closeShareModalOnBackdrop(event)">
+    <div class="modal-box share-modal-box" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <div>
+          <div style="font-size:0.8rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing: 0.05em;" id="shareModalSubtitle">Fiche citoyenne prête à partager</div>
+          <h3 class="modal-title" id="shareModalTitle">Accord entre deux groupes</h3>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeShareModal()" title="Fermer la fenêtre (Échap)">×</button>
       </div>
-      <div class="filter-item">
-        <label for="dtGroupB">Groupe 2</label>
-        <select id="dtGroupB" onchange="renderDetailed()"></select>
-      </div>
-      <div class="filter-item">
-        <label for="dtRelation">Type d'accord</label>
-        <select id="dtRelation" onchange="renderDetailed()">
-          <option value="ALL">Tous les scrutins</option>
-          <option value="POUR_POUR">Uniquement POUR / POUR</option>
-          <option value="CONTRE_CONTRE">Uniquement CONTRE / CONTRE</option>
-          <option value="DESACCORD">Uniquement Désaccords</option>
-        </select>
-      </div>
+      <div class="modal-body">
+        <!-- Sélecteur de format de partage pour scrutin (Hémicycle ou Liste) -->
+        <div class="share-card-format-selector" id="scrutinShareFormatSelector" style="display: none;">
+          <span class="format-selector-label">Format de la carte :</span>
+          <div class="format-btn-group" role="group" aria-label="Format du visuel de partage">
+            <button type="button" class="format-btn active" id="btnShareFormatHemi" onclick="setScrutinShareFormat('hemicycle')">
+              🏛️ Hémicycle
+            </button>
+            <button type="button" class="format-btn" id="btnShareFormatList" onclick="setScrutinShareFormat('list')">
+              📋 Liste des groupes
+            </button>
+          </div>
+        </div>
 
-      <!-- AJOUT ICI : Filtre par issue du vote -->
-      <div class="filter-item">
-        <label for="dtOutcome">Issue du scrutin</label>
-        <select id="dtOutcome" onchange="renderDetailed()">
-          <option value="ALL">Toutes les issues</option>
-          <option value="adopte">Adopté uniquement</option>
-          <option value="rejete">Rejeté uniquement</option>
-        </select>
+        <!-- Aperçu haute fidélité du rendu Canvas 2D -->
+        <div class="share-canvas-preview-wrapper">
+          <canvas id="shareCanvas" width="1080" height="1350"></canvas>
+        </div>
+        <div id="shareStatusToast" class="share-status-toast" style="display: none;"></div>
       </div>
-
-      <div class="filter-item">
-        <label for="dtSearch">Recherche textuelle</label>
-        <input type="text" id="dtSearch" placeholder="Rechercher un mot-clé..." oninput="renderDetailed()">
+      <div class="modal-footer share-modal-actions">
+        <button type="button" class="share-action-btn primary" id="btnDownloadImage" onclick="downloadShareImage()">
+          <span>💾</span> Télécharger l'image PNG
+        </button>
+        <button type="button" class="share-action-btn secondary" id="btnCopyImage" onclick="copyShareImage()">
+          <span>🖼️</span> Copier l'image
+        </button>
+        <button type="button" class="share-action-btn outline" id="btnNativeShare" onclick="shareImageNative()" style="display: none;">
+          <span>📲</span> Partager
+        </button>
+        <button type="button" class="share-action-btn text-only" id="copyCardTextBtn" onclick="copyShareCardText()">
+          <span>📋</span> Copier le texte
+        </button>
       </div>
     </div>
+  </div>
 
-      <!-- Boutons filtres prédéfinis -->
-      <div class="filter-chips-container">
-        <label style="margin-right: 0.25rem;">Filtres rapides :</label>
-        <button class="filter-chip-btn active" onclick="applyPresetFilter('ALL', this)">Tous</button>
-        <button class="filter-chip-btn" onclick="applyPresetFilter('l\'ensemble d', this)">Ensemble du projet</button>
-        <button class="filter-chip-btn" onclick="applyPresetFilter('l\'article premier', this)">Article premier</button>
-        <button class="filter-chip-btn" onclick="applyPresetFilter('l\'amendement', this)">Amendement</button>
-        <button class="filter-chip-btn" onclick="applyPresetFilter('le sous-amendement', this)">Sous-amendement</button>
+  <!-- ONGLET 4 : EXPLORATEUR PANORAMIQUE DES SCRUTINS -->
+  <div id="tab-detailed" class="tab-content">
+    <div class="card">
+      
+      <!-- En-tête épuré Explorateur -->
+      <div class="clean-tool-header">
+        <div class="clean-title-row">
+          <h2 class="clean-tool-title">Explorateur de Scrutins</h2>
+          <div class="clean-header-actions">
+            <button type="button" class="clean-help-btn" data-guide-target="guide-explorer" onclick="toggleContextGuide('guide-explorer')" title="Conseils de recherche et fiches citoyennes">
+              <span>💡</span> Clé de lecture
+            </button>
+          </div>
+        </div>
+
+        <!-- Clé de lecture compacte -->
+        <div id="guide-explorer" class="clean-guide-drawer">
+          <div class="clean-guide-body">
+            <div class="clean-guide-item">
+              <strong>💡 Recherche &amp; fiches :</strong> Recherchez une loi par mot-clé (ex: <em>motion, budget, retraites, immigration</em>) ou appliquez des filtres par groupe et statut. Cliquez sur un scrutin pour ouvrir sa fiche détaillée et générer une carte citoyenne HD.
+            </div>
+          </div>
+        </div>
       </div>
 
-      <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;" id="dtCountLabel"></p>
+      <!-- Barre de recherche Spotlight & Filtres escamotables -->
+      <div class="spotlight-search-container">
+        <div class="spotlight-input-wrapper">
+          <span class="spotlight-icon">🔍</span>
+          <input type="text" id="dtSearch" class="spotlight-input" placeholder="Rechercher une loi, numéro ou mot-clé (ex: immigration, budget, retraites, motion)..." oninput="renderDetailed()">
+          <button type="button" class="btn-toggle-filters" id="btnToggleAdvFilters" onclick="toggleAdvancedFilters()">
+            <span>⚙️</span> Filtres avancés (Groupe, Issue...) ▼
+          </button>
+        </div>
+
+        <!-- Mots-clés suggérés en 1 clic -->
+        <div class="quick-keywords-bar">
+          <span class="quick-kw-label">Recherches fréquentes :</span>
+          <button type="button" class="quick-kw-chip" onclick="quickSearchScrutin('immigration')">Immigration</button>
+          <button type="button" class="quick-kw-chip" onclick="quickSearchScrutin('budget')">Budget</button>
+          <button type="button" class="quick-kw-chip" onclick="quickSearchScrutin('retraites')">Retraites</button>
+          <button type="button" class="quick-kw-chip" onclick="quickSearchScrutin('motion')">Motion de censure</button>
+          <button type="button" class="quick-kw-chip" onclick="quickSearchScrutin('sécurité')">Sécurité</button>
+        </div>
+
+        <!-- Tiroir de filtres avancés repliable -->
+        <div class="advanced-filters-drawer" id="dtAdvancedFilters">
+          <div class="advanced-filters-grid">
+            <div class="filter-item">
+              <label for="dtTargetGroup">Groupe ciblé</label>
+              <select id="dtTargetGroup" onchange="renderDetailed()">
+                <option value="ALL">Tous les groupes (Vue panoramique)</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="dtTargetPosition">Position du groupe</label>
+              <select id="dtTargetPosition" onchange="renderDetailed()">
+                <option value="ALL">Toutes les positions</option>
+                <option value="POUR">A voté POUR</option>
+                <option value="CONTRE">A voté CONTRE</option>
+                <option value="ABSTENTION">S'est ABSTENU</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="dtOutcome">Issue du vote</label>
+              <select id="dtOutcome" onchange="renderDetailed()">
+                <option value="ALL">Toutes les issues</option>
+                <option value="adopte">Adopté uniquement</option>
+                <option value="rejete">Rejeté uniquement</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label>Portée :</label>
+              <div class="mini-segmented">
+                <button type="button" class="filter-chip-btn" id="dtFilterAll" onclick="applyPresetFilter('ALL', this)">Tous</button>
+                <button type="button" class="filter-chip-btn active" id="dtFilterMajor" onclick="applyPresetFilter('MAJOR', this)">⭐ Majeurs</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barre d'état & Légende sans lettres P/C/A -->
+      <div class="explorer-status-bar">
+        <div id="dtCountLabel" class="explorer-count-label"></div>
+        <div class="explorer-legend-strip">
+          <span class="legend-hint">Légende des votes :</span>
+          <span class="legend-pill-item"><span class="panoramic-chip pour">Pour</span></span>
+          <span class="legend-pill-item"><span class="panoramic-chip contre">Contre</span></span>
+          <span class="legend-pill-item"><span class="panoramic-chip abstention">Abstention</span></span>
+          <span class="legend-pill-item"><span class="panoramic-chip absent">Absent / &lt;3</span></span>
+        </div>
+      </div>
+
       <div class="scrutins-list" id="dtScrutinsContainer"></div>
     </div>
   </div>
 
-<!-- ONGLET 5 : À PROPOS / INFORMATIONS -->
-  <div id="tab-about" class="tab-content">
-    <div class="card" style="line-height: 1.7; font-size: 0.95rem; color: #334155;">
-      <h2 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: #0f172a;">Objectif de l'Observatoire</h2>
-      <p style="margin-bottom: 1.25rem;">
-        Cet outil interactif propose une analyse factuelle et transparente de l'activité législative à l'Assemblée nationale. Il permet d'étudier les proximités de vote, les logiques d'alliances et la cohésion interne des groupes parlementaires à partir des scrutins publics solennels et ordinaires.
-      </p>
+  <!-- ONGLET 5 : ASSIDUITÉ & MOBILISATION -->
+  <div id="tab-attendance" class="tab-content">
+    <div class="card">
+      
+      <!-- En-tête épuré Assiduité -->
+      <div class="clean-tool-header">
+        <div class="clean-title-row">
+          <h2 class="clean-tool-title">Assiduité &amp; Mobilisation Parlementaire</h2>
+          <div class="clean-header-actions">
+            <button type="button" class="clean-help-btn" data-guide-target="guide-attendance" onclick="toggleContextGuide('guide-attendance')" title="Méthodologie de mesure et déontologie">
+              <span>💡</span> Clé de lecture &amp; Déontologie
+            </button>
+          </div>
+        </div>
 
-      <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.25rem 0;">
-
-      <h2 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: #0f172a;">Sources des données</h2>
-      <ul style="margin-left: 1.25rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem;">
-        <li><strong>Open Data de l'Assemblée nationale :</strong> ensemble des données officielles brutes issues des exports JSON (scrutins publics et dossiers législatifs).</li>
-        <li><strong>Périmètre :</strong> 16ᵉ et 17ᵉ législatures de la Vᵉ République.</li>
-        <li><strong>Actualisation :</strong> données consolidées et enrichies pour cartographier les positions majoritaires de chaque groupe.</li>
-      </ul>
-
-      <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.25rem 0;">
-
-      <h2 style="font-size: 1.25rem; margin-bottom: 0.75rem; color: #0f172a;">Méthodologie de calcul</h2>
-      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <p>
-          • <strong>Position majoritaire d'un groupe :</strong> pour chaque scrutin, la position officielle retenue (POUR, CONTRE ou ABSTENTION) correspond au vote exprimé par la majorité absolue des députés votants du groupe. Les groupes avec moins de 3 votants sur un texte sont exclus du calcul pour préserver la représentativité statistique.
-        </p>
-        <p>
-          • <strong>Taux de cohésion :</strong> pourcentage de députés du groupe ayant suivi la consigne majoritaire lors du scrutin. Un taux de 100 % indique une unanimité parfaite.
-        </p>
-        <p>
-          • <strong>Adhésion positive vs Accord global :</strong>
-          <br>— <em>Adhésion positive (Pour / Pour) :</em> mesure les textes sur lesquels deux groupes s'accordent explicitement pour voter favorablement ensemble.
-          <br>— <em>Accord global (Pour + Contre) :</em> inclut également les rejets conjoints (opposition commune).
-        </p>
+        <!-- Clé de lecture compacte -->
+        <div id="guide-attendance" class="clean-guide-drawer">
+          <div class="clean-guide-body">
+            <div class="clean-guide-item">
+              <strong>⭐ Textes majeurs vs marathons :</strong> La présence sur les textes majeurs (budgets, motions de censure, lois institutionnelles) constitue le véritable baromètre politique. Les marathons d'amendements (parfois votés à 3h du matin) faussent les taux bruts.
+            </div>
+            <div class="clean-guide-item">
+              <strong>📋 Présence en personne vs Procuration :</strong> Le règlement autorise le vote par délégation (procuration). Nous mesurons la proportion de votes exercés physiquement par l'élu par rapport aux votes délégués à un collègue.
+            </div>
+            <div class="clean-guide-item">
+              <strong>⚖️ Travail hors Hémicycle :</strong> Une absence en séance publique peut correspondre à des responsabilités institutionnelles légitimes : travail en commissions permanentes, délégations parlementaires, missions d'information ou présidence de séance.
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div style="margin-top: 1.5rem; padding: 0.85rem 1rem; background: #f1f5f9; border-left: 4px solid var(--primary); border-radius: 4px; font-size: 0.85rem; color: #475569;">
-        <strong>Note de neutralité :</strong> Cet observatoire est un projet indépendant d'analyse de données publiques. Il ne porte aucun jugement de valeur politique et s'appuie strictement sur les décomptes officiels de l'hémicycle.
+      <!-- Sous-navigation interactive de l'onglet -->
+      <div class="attendance-subnav-bar">
+        <div class="attendance-subnav-pill" role="tablist" aria-label="Sections d'assiduité">
+          <button type="button" class="attendance-subnav-btn active" data-view="groups" onclick="switchAttendanceSubView('groups')">
+            👥 Baromètre des Groupes
+          </button>
+          <button type="button" class="attendance-subnav-btn" data-view="deputes" onclick="switchAttendanceSubView('deputes')">
+            👤 Députoscope &amp; Quadrant 2D
+          </button>
+          <button type="button" class="attendance-subnav-btn" data-view="couteau" onclick="switchAttendanceSubView('couteau')">
+            ⚖️ Scrutins au Couteau
+          </button>
+        </div>
       </div>
-      <p style="margin-bottom: 1.25rem;">
-        Site HTML et script python pour extraction de données fait par Gemini Flash 3.7
-      </p>
-      <!-- Fait par L.M et publié à l'origine sur https://louloume78.github.io/VersusPolitique/ --> 
+
+      <!-- Sélecteur de Législature pour l'Assiduité -->
+      <div class="attendance-leg-switcher" role="group" aria-label="Filtrer par législature">
+        <span class="attendance-leg-label">Législature :</span>
+        <button type="button" class="attendance-leg-btn active" data-leg="ALL" onclick="setAttendanceLegislature('ALL')">
+          🏛️ Toutes législatures (16ᵉ &amp; 17ᵉ)
+        </button>
+        <button type="button" class="attendance-leg-btn" data-leg="17" onclick="setAttendanceLegislature('17')">
+          ⚡ 17ᵉ Législature (2024-)
+        </button>
+        <button type="button" class="attendance-leg-btn" data-leg="16" onclick="setAttendanceLegislature('16')">
+          📜 16ᵉ Législature (2022-2024)
+        </button>
+      </div>
+
+      <!-- Indicateur de chargement dédié sans écraser le DOM -->
+      <div id="attendanceLoadingState" class="attendance-loading" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p style="margin-top: 0.75rem; font-size: 0.95rem; font-weight: 600; color: #64748b;">Chargement des statistiques d'assiduité...</p>
+      </div>
+
+      <div id="attendanceContent">
+        <!-- SOUS-VUE 1 : BAROMÈTRE DES GROUPES -->
+        <div id="subview-groups" class="attendance-subview active">
+          <!-- Cartes de synthèse KPIs -->
+          <div class="kpi-row" id="groupsKpisRow"></div>
+
+          <!-- Graphique Chart.js -->
+          <div class="attendance-chart-card">
+            <div class="attendance-chart-head">
+              <h3>Mobilisation comparée : Textes Majeurs vs Présence Globale vs Procuration</h3>
+              <span class="chart-subtitle">Pourcentage moyen de députés votants au sein de chaque groupe politique</span>
+            </div>
+            <div class="attendance-chart-canvas-wrap">
+              <canvas id="groupsAttendanceChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Tableau récapitulatif par groupe -->
+          <div class="attendance-table-wrap">
+            <table class="attendance-table">
+              <thead>
+                <tr>
+                  <th>Groupe politique</th>
+                  <th style="text-align: right;">Députés</th>
+                  <th style="text-align: right;">⭐ Textes Majeurs</th>
+                  <th style="text-align: right;">🌐 Présence Globale</th>
+                  <th style="text-align: right;">📋 Procurations</th>
+                  <th style="width: 25%;">Intensité de mobilisation</th>
+                </tr>
+              </thead>
+              <tbody id="groupsAttendanceTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SOUS-VUE 2 : DÉPUTOSCOPE & QUADRANT 2D -->
+        <div id="subview-deputes" class="attendance-subview">
+          <!-- Matrice Quadrant 2D Nuage de points -->
+          <div class="quadrant-chart-card">
+            <div class="quadrant-chart-head">
+              <div class="quadrant-title-wrap">
+                <h3>Matrice Quadrant : Textes Majeurs vs Présence Globale</h3>
+                <span class="chart-subtitle" id="quadrantSubtitle">Positionnement des députés par rapport aux médianes de l'Assemblée nationale. Cliquez sur un point pour ouvrir la fiche de l'élu.</span>
+              </div>
+              <div class="quadrant-legend-pills">
+                <span class="q-pill q-pill-pilier">🏛️ Piliers (Top 30)</span>
+                <span class="q-pill q-pill-stratege">🎯 Stratèges (Top 30)</span>
+                <span class="q-pill q-pill-marathonien">🌙 Marathoniens (Top 30)</span>
+                <span class="q-pill q-pill-fantome">👻 Décrochage (Flop 30)</span>
+                <span class="q-pill q-pill-standard">👤 Activité Régulière</span>
+              </div>
+            </div>
+            <div class="quadrant-canvas-wrap">
+              <canvas id="quadrantChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Barre de filtres Députoscope -->
+          <div class="deputoscope-filter-bar">
+            <div class="deputoscope-search-wrap">
+              <input type="text" id="deputoscopeSearch" placeholder="🔍 Rechercher un député, département ou circonscription..." oninput="onDeputoscopeFilterChange()">
+            </div>
+            <div class="deputoscope-selects-row">
+              <select id="deputoscopeGroupSelect" onchange="onDeputoscopeFilterChange()">
+                <option value="ALL">Tous les groupes politiques</option>
+              </select>
+              <select id="deputoscopeQuadrantSelect" onchange="onDeputoscopeFilterChange()">
+                <option value="ALL">Tous les profils (Quadrants)</option>
+                <option value="Pilier">🏛️ Piliers de l'Hémicycle (Top 30)</option>
+                <option value="Stratège">🎯 Stratèges / Spécialistes (Top 30)</option>
+                <option value="Marathonien">🌙 Marathoniens de l'Ombre (Top 30)</option>
+                <option value="Fantôme">👻 Décrochage / Absentéisme (Flop 30)</option>
+                <option value="Standard">👤 Activité Régulière</option>
+              </select>
+              <select id="deputoscopeSortSelect" onchange="onDeputoscopeFilterChange()">
+                <option value="majeurs_desc">Trier par : ⭐ Textes majeurs (décroissant)</option>
+                <option value="global_desc">Trier par : 🌐 Présence globale (décroissant)</option>
+                <option value="delegation_desc">Trier par : 📋 Recours procuration (décroissant)</option>
+                <option value="nom_asc">Trier par : Nom alphabétique (A-Z)</option>
+              </select>
+              <span class="header-count-badge" id="deputoscopeResultsCount"></span>
+            </div>
+          </div>
+
+          <!-- Layout en deux colonnes : Grille de cartes + Fiche profil sticky -->
+          <div class="deputoscope-layout">
+            <div class="deputoscope-list-col">
+              <div class="deputoscope-cards-grid" id="deputoscopeCardsGrid"></div>
+            </div>
+            <div class="deputoscope-detail-col">
+              <div id="deputyDetailContainer" class="deputy-sticky-container"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SOUS-VUE 3 : SCRUTINS AU COUTEAU -->
+        <div id="subview-couteau" class="attendance-subview">
+          <div class="couteau-intro-card">
+            <div class="couteau-intro-icon">⚡</div>
+            <div class="couteau-intro-text">
+              <h4>L'impact direct des bancs vides sur la loi</h4>
+              <p>
+                Ces scrutins ont été adoptés ou rejetés à <strong>10 voix ou moins d'écart</strong>. 
+                Dans chacun de ces votes décisifs, l'absence de quelques députés d'un seul groupe parlementaire a fait basculer le destin de la loi pour l'ensemble des Français.
+              </p>
+            </div>
+          </div>
+
+          <div class="close-votes-feed" id="closeVotesList"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 
+<!-- POP-UP MODALE DE DÉTAIL DU SCRUTIN -->
+<div class="modal-backdrop" id="scrutinModal" onclick="closeModalOnBackdrop(event)">
+  <div class="modal-box" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <div style="font-size:0.8rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.05em;" id="modalScrutinMeta">Scrutin public</div>
+        <h3 class="modal-title" id="modalScrutinTitle">Titre du scrutin</h3>
+      </div>
+      <button type="button" class="modal-close-btn" onclick="closeModal()" title="Fermer la fenêtre (Échap)">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-meta-grid">
+        <div class="modal-meta-item">
+          <span class="modal-meta-label">Date du scrutin</span>
+          <span class="modal-meta-val" id="modalScrutinDate">-</span>
+        </div>
+        <div class="modal-meta-item">
+          <span class="modal-meta-label">Législature</span>
+          <span class="modal-meta-val" id="modalScrutinLeg">-</span>
+        </div>
+        <div class="modal-meta-item">
+          <span class="modal-meta-label">Thématique / Commission</span>
+          <span class="modal-meta-val" id="modalScrutinComm">-</span>
+        </div>
+        <div class="modal-meta-item">
+          <span class="modal-meta-label">Issue finale</span>
+          <span class="modal-meta-val" id="modalScrutinOutcome">-</span>
+        </div>
+      </div>
 
-  <script>
-    const POLITICAL_SPECTRUM = [
-      "Gauche Démocrate et Républicaine", "La France Insoumise", "Les Écologistes",
-      "Socialistes", "LIOT", "Renaissance / EPR", "Les Démocrates (MoDem)",
-      "Horizons", "Droite Républicaine / LR", "Union des Droites pour la République (UDR)",
-      "Rassemblement National", "Non Inscrits"
-    ];
-
-    let dataset = [];
-    let allCommissions = new Set();
-    let currentOvSort = "spectrum";
-    let currentHmSortCol = null;
-    let currentPresetFilter = "ALL";
-    let radarInstance = null;
-    let timelineInstance = null;
-
-    fetch('votes_enriched_complete_final.json')
-      .then(res => res.json())
-      .then(data => {
-        dataset = data;
-        dataset.forEach(s => { if (s.commission) allCommissions.add(s.commission); });
-        document.getElementById('global-kpi').textContent = `Base consolidée : ${dataset.length.toLocaleString('fr-FR')} scrutins répertoriés.`;
-        initSelectors();
-        renderOverview();
-      });
-
-    function initSelectors() {
-      const commissions = Array.from(allCommissions).sort();
-      populateSelect('ovRefGroup', POLITICAL_SPECTRUM);
-      populateSelect('ovCommission', commissions, true);
-
-      populateSelect('compGroupA', POLITICAL_SPECTRUM);
-      populateSelect('compGroupB', POLITICAL_SPECTRUM);
-      document.getElementById('compGroupA').value = "Rassemblement National";
-      document.getElementById('compGroupB').value = "Renaissance / EPR";
-
-      populateSelect('dtGroupA', POLITICAL_SPECTRUM);
-      populateSelect('dtGroupB', POLITICAL_SPECTRUM);
-      document.getElementById('dtGroupA').value = "Rassemblement National";
-      document.getElementById('dtGroupB').value = "Renaissance / EPR";
-    }
-
-    function populateSelect(id, list, hasAll = false) {
-      const el = document.getElementById(id);
-      el.innerHTML = hasAll ? '<option value="ALL">Toutes les thématiques</option>' : '';
-      list.forEach(item => el.appendChild(new Option(item, item)));
-    }
-
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      event.target.classList.add('active');
-      document.getElementById(tabId).classList.add('active');
-
-      if (tabId === 'tab-overview') renderOverview();
-      if (tabId === 'tab-heatmap') renderHeatmap();
-      if (tabId === 'tab-radar-time') renderCharts();
-      if (tabId === 'tab-detailed') renderDetailed();
-    }
-
-    function filterDataset(selectedPeriod, commission = 'ALL') {
-      return dataset.filter(s => {
-        if (commission !== 'ALL' && s.commission !== commission) return false;
-        if (selectedPeriod === 'LEG_16') return s.legislature === "16" || (s.date && s.date < "2024-06-10");
-        if (selectedPeriod === 'LEG_17') return s.legislature === "17" || (s.date && s.date >= "2024-07-01");
-        return true;
-      });
-    }
-
-    function setSortOverview(type) {
-      currentOvSort = (currentOvSort === type) ? (type + '_desc') : type;
-      renderOverview();
-    }
-
-    function renderOverview() {
-      const ref = document.getElementById('ovRefGroup').value;
-      const dateRange = document.getElementById('ovDateRange').value;
-      const commission = document.getElementById('ovCommission').value;
-      const filtered = filterDataset(dateRange, commission);
-
-      const stats = {};
-      let refCohTotal = 0, refCohCount = 0;
-
-      POLITICAL_SPECTRUM.forEach(g => {
-        if (g !== ref) stats[g] = { pour: 0, contre: 0, diff: 0, total: 0, cohTotal: 0, cohCount: 0 };
-      });
-
-      filtered.forEach(s => {
-        const refPos = s.positions[ref];
-        if (s.cohesions && s.cohesions[ref]) {
-          refCohTotal += s.cohesions[ref];
-          refCohCount++;
-        }
-        if (!refPos) return;
-
-        Object.entries(s.positions).forEach(([other, pos]) => {
-          if (other === ref || !stats[other]) return;
-          stats[other].total++;
-          if (refPos === 'POUR' && pos === 'POUR') stats[other].pour++;
-          else if (refPos === 'CONTRE' && pos === 'CONTRE') stats[other].contre++;
-          else stats[other].diff++;
-
-          if (s.cohesions && s.cohesions[other]) {
-            stats[other].cohTotal += s.cohesions[other];
-            stats[other].cohCount++;
-          }
-        });
-      });
-
-      document.getElementById('refGroupCohesion').textContent = 
-        refCohCount ? `${(refCohTotal / refCohCount).toFixed(1)}%` : '-';
-
-      let rows = Object.entries(stats)
-        .filter(([_, d]) => d.total > 0)
-        .map(([group, d]) => ({
-          group,
-          pourPct: parseFloat(((d.pour / d.total) * 100).toFixed(1)),
-          contrePct: parseFloat(((d.contre / d.total) * 100).toFixed(1)),
-          diffPct: parseFloat(((d.diff / d.total) * 100).toFixed(1)),
-          cohesion: d.cohCount ? (d.cohTotal / d.cohCount).toFixed(1) : '-',
-          ...d
-        }));
-
-      if (currentOvSort === 'spectrum') rows.sort((a, b) => POLITICAL_SPECTRUM.indexOf(a.group) - POLITICAL_SPECTRUM.indexOf(b.group));
-      else if (currentOvSort === 'pour') rows.sort((a, b) => b.pourPct - a.pourPct);
-      else if (currentOvSort === 'pour_desc') rows.sort((a, b) => a.pourPct - b.pourPct);
-      else if (currentOvSort === 'diff') rows.sort((a, b) => b.diffPct - a.diffPct);
-      else if (currentOvSort === 'diff_desc') rows.sort((a, b) => a.diffPct - b.diffPct);
-
-      const tbody = document.getElementById('ovTableBody');
-      tbody.innerHTML = '';
-
-      rows.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${r.group}</strong></td>
-          <td>
-            <div class="stacked-bar-container">
-              <div class="bar-segment segment-pour" style="width: ${r.pourPct}%;">${r.pourPct > 6 ? r.pourPct + '%' : ''}</div>
-              <div class="bar-segment segment-contre" style="width: ${r.contrePct}%;">${r.contrePct > 6 ? r.contrePct + '%' : ''}</div>
-              <div class="bar-segment segment-diff" style="width: ${r.diffPct}%;">${r.diffPct > 6 ? r.diffPct + '%' : ''}</div>
+      <!-- MINI-HÉMICYCLE PARLEMENTAIRE SVG (Chantier 6) -->
+      <div class="modal-hemicycle-section" id="modalHemicycleSection">
+        <div class="hemicycle-header">
+          <div class="hemicycle-title-wrap">
+            <h4 class="hemicycle-title">Hémicycle Parlementaire (577 sièges)</h4>
+            <span class="hemicycle-subtitle">Projection spatiale des votes et taux de présence par groupe</span>
+          </div>
+          <div class="hemicycle-controls">
+            <div class="hemicycle-toggle-group" role="group" aria-label="Mode d'affichage de l'hémicycle">
+              <button type="button" class="hemi-toggle-btn active" id="hemiModeVote" onclick="setHemicycleMode('vote')">
+                🗳️ Votes
+              </button>
+              <button type="button" class="hemi-toggle-btn" id="hemiModePartis" onclick="setHemicycleMode('partis')">
+                🏛️ Partis
+              </button>
             </div>
-          </td>
-          <td style="font-size: 0.85rem;">
-            <span style="color: var(--pour-color); font-weight:700;">${r.pourPct}%</span> / 
-            <span style="color: var(--contre-color); font-weight:700;">${r.contrePct}%</span> / 
-            <span style="color: #b45309; font-weight:700;">${r.diffPct}%</span>
-          </td>
-          <td><span class="cohesion-badge">${r.cohesion}%</span></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function sortHeatmapByCol(groupName) {
-    currentHmSortCol = (currentHmSortCol === groupName) ? null : groupName;
-    renderHeatmap();
-    }
-
-    function renderHeatmap() {
-    const dateRange = document.getElementById('hmDateRange').value;
-    const metric = document.getElementById('hmMetric').value;
-    const filtered = filterDataset(dateRange);
-    const activeGroups = POLITICAL_SPECTRUM.filter(g => filtered.some(s => s.positions && s.positions[g]));
-
-    const matrix = {};
-    activeGroups.forEach(g1 => {
-        matrix[g1] = {};
-        activeGroups.forEach(g2 => { matrix[g1][g2] = { pour: 0, contre: 0, total: 0 }; });
-    });
-
-    filtered.forEach(s => {
-        const p = s.positions;
-        const present = Object.keys(p).filter(k => activeGroups.includes(k));
-        for (let i = 0; i < present.length; i++) {
-        for (let j = 0; j < present.length; j++) {
-            const g1 = present[i], g2 = present[j];
-            matrix[g1][g2].total++;
-            if (p[g1] === 'POUR' && p[g2] === 'POUR') matrix[g1][g2].pour++;
-            if (p[g1] === 'CONTRE' && p[g2] === 'CONTRE') matrix[g1][g2].contre++;
-        }
-        }
-    });
-
-    let rowGroups = [...activeGroups];
-    if (currentHmSortCol && matrix[currentHmSortCol]) {
-        rowGroups.sort((a, b) => getCellVal(matrix[b][currentHmSortCol], metric) - getCellVal(matrix[a][currentHmSortCol], metric));
-    }
-
-    let html = '<table class="heatmap-table"><thead><tr><th></th>';
-    activeGroups.forEach(g => {
-        const isSorted = (currentHmSortCol === g) ? ' 🔽' : '';
-        html += `<th class="sortable-hm" onclick="sortHeatmapByCol('${g}')">${g}${isSorted}</th>`;
-    });
-    html += '</tr></thead><tbody>';
-
-    rowGroups.forEach(g1 => {
-        html += `<tr><th style="text-align:right; padding-right:8px;">${g1}</th>`;
-        activeGroups.forEach(g2 => {
-        if (g1 === g2) { 
-            html += `<td style="background:#f1f5f9; color:#94a3b8;">-</td>`; 
-            return; 
-        }
-        const d = matrix[g1][g2];
-        if (!d || d.total === 0) { 
-            html += `<td style="background:#f8fafc; color:#cbd5e1;">0%</td>`; 
-            return; 
-        }
-        const pct = Math.round(getCellVal(d, metric));
-        html += `<td class="heatmap-cell" style="${getHeatmapColor(pct, metric)}">${pct}%</td>`;
-        });
-        html += '</tr>';
-    });
-    html += '</tbody></table>';
-    document.getElementById('heatmapContainer').innerHTML = html;
-    }
-
-    function getCellVal(d, metric) {
-      if (!d || d.total === 0) return 0;
-      if (metric === 'POUR_POUR') return (d.pour / d.total) * 100;
-      if (metric === 'CONTRE_CONTRE') return (d.contre / d.total) * 100;
-      return ((d.pour + d.contre) / d.total) * 100;
-    }
-
-    function getHeatmapColor(pct, metric) {
-      let hue = 142; // Vert (POUR_POUR)
-
-      if (metric === 'CONTRE_CONTRE') {
-        hue = 0;   // Rouge
-      } else if (metric === 'TOTAL_ACCORD' || metric === 'DESACCORD') {
-        hue = 45;  // Jaune
-      }
-
-      const lightness = Math.round(100 - (pct * 0.55));
-      const saturation = Math.min(Math.round(pct * 1.2), 85);
-      const textColor = (pct > 60 && metric !== 'TOTAL_ACCORD' && metric !== 'DESACCORD') ? '#ffffff' : '#1e293b';
-
-      return `background: hsl(${hue}, ${saturation}%, ${lightness}%); color: ${textColor};`;
-    }
-
-    function renderCharts() {
-      const gA = document.getElementById('compGroupA').value;
-      const gB = document.getElementById('compGroupB').value;
-      const period = document.getElementById('chartDateRange').value;
-      const filtered = filterDataset(period);
-
-      const commStats = {};
-      const timeStats = {};
-
-      filtered.forEach(s => {
-        const pA = s.positions[gA], pB = s.positions[gB];
-        if (!pA || !pB) return;
-
-        const comm = s.commission || "Autre";
-        if (!commStats[comm]) commStats[comm] = { pour: 0, total: 0 };
-        commStats[comm].total++;
-        if (pA === 'POUR' && pB === 'POUR') commStats[comm].pour++;
-
-        const mois = s.mois || "Inconnu";
-        if (mois !== "Inconnu") {
-          if (!timeStats[mois]) timeStats[mois] = { matches: 0, total: 0 };
-          timeStats[mois].total++;
-          if (pA === pB) timeStats[mois].matches++;
-        }
-      });
-
-      const radarLabels = Object.keys(commStats).filter(c => c !== "Autre");
-      const radarData = radarLabels.map(c => ((commStats[c].pour / commStats[c].total) * 100).toFixed(1));
-
-      if (radarInstance) radarInstance.destroy();
-      const ctxRadar = document.getElementById('radarChart').getContext('2d');
-      radarInstance = new Chart(ctxRadar, {
-        type: 'radar',
-        data: {
-          labels: radarLabels,
-          datasets: [{
-            label: `% Adhésion (Pour/Pour)`,
-            data: radarData,
-            backgroundColor: 'rgba(22, 163, 74, 0.2)',
-            borderColor: '#16a34a',
-            pointBackgroundColor: '#16a34a'
-          }]
-        },
-        options: { scales: { r: { min: 0, max: 100 } } }
-      });
-
-      const sortedMonths = Object.keys(timeStats).sort();
-      const timeData = sortedMonths.map(m => ((timeStats[m].matches / timeStats[m].total) * 100).toFixed(1));
-
-      if (timelineInstance) timelineInstance.destroy();
-      const ctxTime = document.getElementById('timelineChart').getContext('2d');
-      timelineInstance = new Chart(ctxTime, {
-        type: 'line',
-        data: {
-          labels: sortedMonths,
-          datasets: [{
-            label: `% Accord Global (Mois par mois)`,
-            data: timeData,
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-            fill: true,
-            tension: 0.3
-          }]
-        },
-        options: { scales: { y: { min: 0, max: 100 } } }
-      });
-    }
-
-    function applyPresetFilter(filterText, element) {
-      currentPresetFilter = filterText;
-      document.querySelectorAll('.filter-chip-btn').forEach(btn => btn.classList.remove('active'));
-      element.classList.add('active');
-      renderDetailed();
-    }
-
-    function renderDetailed() {
-      const gA = document.getElementById('dtGroupA').value;
-      const gB = document.getElementById('dtGroupB').value;
-      const relation = document.getElementById('dtRelation').value;
-      const outcome = document.getElementById('dtOutcome').value; // <-- AJOUT 1
-      const search = document.getElementById('dtSearch').value.toLowerCase().trim();
-
-      const matched = [];
-      dataset.forEach(s => {
-        const pA = s.positions[gA], pB = s.positions[gB];
-        if (!pA || !pB) return;
-
-        const isPour = (pA === 'POUR' && pB === 'POUR');
-        const isContre = (pA === 'CONTRE' && pB === 'CONTRE');
-        const isDiff = (pA !== pB);
-
-        if (relation === 'POUR_POUR' && !isPour) return;
-        if (relation === 'CONTRE_CONTRE' && !isContre) return;
-        if (relation === 'DESACCORD' && !isDiff) return;
-
-        if (outcome !== 'ALL') {
-        const sSort = (s.sort || '').toLowerCase();
-        if (outcome === 'adopte' && !sSort.includes('adopt')) return;
-        if (outcome === 'rejete' && !sSort.includes('rejet')) return;
-        }
-
-        const titreLower = (s.titre || "").toLowerCase();
-
-        // Filtre rapide contextuel
-        if (currentPresetFilter !== 'ALL') {
-          if (!titreLower.includes(currentPresetFilter.toLowerCase())) return;
-        }
-
-        // Filtre recherche textuelle (titre, numéro de scrutin et date)
-        if (search) {
-          const idStr = String(s.id || '').toLowerCase();
-          const dateStr = String(s.date || '').toLowerCase();
-          const matchSearch = titreLower.includes(search) || idStr.includes(search) || dateStr.includes(search);
-          if (!matchSearch) return;
-        }
-
-        matched.push({ ...s, pA, pB, isPour, isContre });
-      });
-
-      // Tri anté-chronologique strict (du plus récent au plus ancien)
-      matched.sort((a, b) => {
-        const dateA = a.date ? new Date(a.date).getTime() : 0;
-        const dateB = b.date ? new Date(b.date).getTime() : 0;
-        if (dateB !== dateA) return dateB - dateA;
-        return Number(b.id || 0) - Number(a.id || 0);
-      });
-
-      document.getElementById('dtCountLabel').textContent = `${matched.length.toLocaleString('fr-FR')} scrutin${matched.length > 1 ? 's' : ''} trouvé${matched.length > 1 ? 's' : ''}.`;
-
-      const container = document.getElementById('dtScrutinsContainer');
-      const visibleItems = matched.slice(0, 100);
-
-      container.innerHTML = visibleItems.map(s => {
-        let typeClass = s.isPour ? "pour-pour" : (s.isContre ? "contre-contre" : "desaccord");
-        
-        const getBadge = (pos) => {
-          if (pos === 'POUR') return `<span class="vote-tag-badge pour">POUR</span>`;
-          if (pos === 'CONTRE') return `<span class="vote-tag-badge contre">CONTRE</span>`;
-          return `<span class="vote-tag-badge abstention">${pos}</span>`;
-        };
-        // Détermine le label accentué et la classe CSS
-        const isAdopte = (s.sort || '').toLowerCase().includes('adopt');
-        const outcomeLabel = isAdopte ? 'ADOPTÉ' : 'REJETÉ';
-        const outcomeClass = isAdopte ? 'adopte' : 'rejete';
-
-        return `
-        <div class="vote-item-card ${typeClass}">
-          <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:#64748b;">
-            <span>Scrutin n°${s.id} — ${s.date || 'Date inconnue'} — ${s.commission || 'Séance'}</span>
-            <span>Législature ${s.legislature || '-'}</span>
-          </div>
-
-          <div style="font-weight:700; font-size:0.95rem; color:#0f172a; line-height:1.4;">
-            ${s.titre}
-          </div>
-
-          <div style="display:flex; align-items:center; flex-wrap:wrap; gap:1.25rem; font-size:0.85rem; padding-top:0.5rem; border-top:1px dashed var(--border-color);">
-            <div><span style="font-weight:700; color:#334155;">${gA} :</span> ${getBadge(s.pA)}</div>
-            <div><span style="font-weight:700; color:#334155;">${gB} :</span> ${getBadge(s.pB)}</div>
-            <div style="margin-left: auto;"><span class="outcome-badge ${outcomeClass}">${outcomeLabel}</span></div>
           </div>
         </div>
-      `;
-      }).join('');
-    }
-  </script>
+
+        <div class="hemicycle-canvas-wrap" id="modalScrutinHemicycleContainer">
+          <!-- Le SVG de l'hémicycle est injecté dynamiquement par js/hemicycle.js -->
+        </div>
+      </div>
+
+      <div>
+        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; color:#0f172a;">Positions de vote et présence par groupe parlementaire</h4>
+        <div style="overflow-x: auto;">
+          <table class="modal-table">
+            <thead>
+              <tr>
+                <th style="width:46%;">Groupe politique</th>
+                <th style="width:27%; text-align:center;">Position majoritaire</th>
+                <th style="width:27%; text-align:center;">Députés présents</th>
+              </tr>
+            </thead>
+            <tbody id="modalScrutinTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span style="font-size:0.8rem; color:#64748b;">Source : Open Data Assemblée nationale</span>
+      <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+        <button type="button" class="share-scrutin-btn" onclick="openScrutinShareModal()">
+          <span>📸</span> Partager ce scrutin
+        </button>
+        <a href="#" target="_blank" rel="noopener noreferrer" class="an-official-btn" id="modalOfficialLink">
+          Consulter sur assemblee-nationale.fr ↗
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE : MÉTHODOLOGIE & DÉFINITIONS -->
+<div class="modal-backdrop" id="methodologyModal" onclick="closeMethodologyModalOnBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="methodologyModalTitle">
+  <div class="modal-box" style="max-width: 820px;">
+    <div class="modal-header">
+      <div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Cadre d'analyse &amp; Sources officielles</div>
+        <h3 class="modal-title" id="methodologyModalTitle" style="font-size: 1.15rem; margin-top: 0.2rem;">Méthodologie &amp; Définitions de l'Observatoire</h3>
+      </div>
+      <button type="button" class="modal-close-btn" onclick="closeMethodologyModal()" title="Fermer la fenêtre (Échap)">×</button>
+    </div>
+    <div class="modal-body">
+      
+      <div>
+        <h4 style="margin: 0 0 0.4rem 0; font-size: 1rem; color: #0f172a;">🎯 Objectif de l'Observatoire</h4>
+        <p style="margin: 0; line-height: 1.6;">
+          Cet outil interactif propose une analyse factuelle, neutre et transparente de l'activité législative à l'Assemblée nationale. Il permet d'étudier les proximités de vote, les logiques d'alliances et la discipline de vote des groupes parlementaires à partir des scrutins publics solennels et ordinaires.
+        </p>
+      </div>
+
+      <div style="padding: 0.85rem 1rem; background: #f8fafc; border-left: 4px solid var(--primary); border-radius: 6px;">
+        <strong style="color: #0f172a;">⚖️ Note de neutralité &amp; Indépendance :</strong>
+        <p style="margin: 0.35rem 0 0 0; font-size: 0.88rem; color: #475569; line-height: 1.5;">
+          Cet observatoire est un projet indépendant et citoyen d'analyse de données publiques. Il ne porte aucun jugement de valeur politique et s'appuie strictement sur les décomptes officiels de l'hémicycle.
+        </p>
+      </div>
+
+      <div>
+        <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #0f172a;">📐 Règles de calcul &amp; Indicateurs clés</h4>
+        <div style="display: flex; flex-direction: column; gap: 0.65rem; line-height: 1.55;">
+          <p style="margin: 0;">
+            • <strong>Position majoritaire d'un groupe :</strong> pour chaque scrutin, la position retenue (POUR, CONTRE ou ABSTENTION) correspond au vote exprimé par la majorité absolue des députés votants du groupe. Les groupes avec moins de 3 votants sur un texte sont exclus du calcul pour préserver la représentativité statistique.
+          </p>
+          <p style="margin: 0;">
+            • <strong>Discipline de vote :</strong> pourcentage de députés du groupe ayant suivi la consigne majoritaire lors du scrutin. Un taux de 100 % indique une unanimité parfaite au sein du groupe.
+          </p>
+          <p style="margin: 0;">
+            • <strong>Accords « Pour » vs Accords « Contre » :</strong>
+            <br>— <span style="color: var(--pour-color); font-weight:700;">Accords « Pour » :</span> textes et amendements votés POUR conjointement (coalition d'adoption positive).
+            <br>— <span style="color: var(--contre-color); font-weight:700;">Accords « Contre » :</span> opposition conjointe (les deux groupes ont voté CONTRE ensemble).
+            <br>— <span style="color: var(--diff-color); font-weight:700;">Désaccords :</span> scrutins où un groupe vote Pour et l'autre Contre, ou vote vs abstention.
+          </p>
+          <p style="margin: 0;">
+            • <strong>Le seuil structurel des 70 % :</strong> à l'Assemblée nationale, le consensus technique de routine sur les amendements ordinaires génère mécaniquement un socle de proximité de 60 % à 70 % entre presque tous les groupes. Une alliance politique réelle ne se constate qu'au-delà de 75-80 % ou spécifiquement sur le filtre « Textes majeurs ».
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #0f172a;">🏛️ Composition et effectifs des groupes (17ᵉ législature)</h4>
+        <p style="margin: 0 0 0.6rem 0; font-size: 0.85rem; color: #64748b;">
+          Effectifs officiels des groupes politiques (membres et apparentés). <em>Note : le regroupement des « Non Inscrits » n'étant pas un groupe politique constitué et ne présentant pas de ligne de vote unifiée, il est exclu des matrices comparatives.</em>
+        </p>
+        <div style="overflow-x: auto;">
+          <table class="modal-table" style="font-size: 0.88rem;">
+            <thead>
+              <tr>
+                <th style="width: 70%;">Groupe parlementaire</th>
+                <th style="width: 30%; text-align: right;">Sièges</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Rassemblement National (RN)</strong></td><td style="text-align: right; font-weight: 700;">125</td></tr>
+              <tr><td><strong>Ensemble pour la République / Renaissance (EPR)</strong></td><td style="text-align: right; font-weight: 700;">94</td></tr>
+              <tr><td><strong>La France Insoumise - NFP (LFI-NFP)</strong></td><td style="text-align: right; font-weight: 700;">71</td></tr>
+              <tr><td><strong>Socialistes et apparentés (SOC)</strong></td><td style="text-align: right; font-weight: 700;">66</td></tr>
+              <tr><td><strong>Droite Républicaine (DR)</strong></td><td style="text-align: right; font-weight: 700;">47</td></tr>
+              <tr><td><strong>Les Écologistes et Social (EcoS)</strong></td><td style="text-align: right; font-weight: 700;">38</td></tr>
+              <tr><td><strong>Les Démocrates (Dem)</strong></td><td style="text-align: right; font-weight: 700;">36</td></tr>
+              <tr><td><strong>Horizons &amp; Indépendants (HOR)</strong></td><td style="text-align: right; font-weight: 700;">34</td></tr>
+              <tr><td><strong>LIOT (Libertés, Indépendants, Outre-mer et Territoires)</strong></td><td style="text-align: right; font-weight: 700;">23</td></tr>
+              <tr><td><strong>Gauche Démocrate et Républicaine (GDR)</strong></td><td style="text-align: right; font-weight: 700;">17</td></tr>
+              <tr><td><strong>Union des Droites pour la République (UDR)</strong></td><td style="text-align: right; font-weight: 700;">16</td></tr>
+              <tr style="color: #64748b; font-style: italic;"><td>Non Inscrits (exclus de l'analyse)</td><td style="text-align: right;">8</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="font-size: 0.8rem; color: #64748b; border-top: 1px solid var(--border-color); padding-top: 0.6rem;">
+        Total : 577 députés. Données issues du portail officiel de l'Assemblée nationale.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span style="font-size: 0.8rem; color: #64748b;">Source : Open Data Assemblée nationale</span>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <a href="https://data.assemblee-nationale.fr/" target="_blank" rel="noopener noreferrer" class="an-official-btn">
+          Portail Open Data AN ↗
+        </a>
+        <button type="button" class="btn btn-secondary" onclick="closeMethodologyModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE CONSTRUCTEUR DE COALITIONS INTERACTIF (CHANTIER 5) -->
+<div class="modal-backdrop" id="coalitionsModal" onclick="closeCoalitionsModalOnBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="coalitionsModalTitle">
+  <div class="modal-box modal-box-large" style="max-width: 980px;">
+    <div class="modal-header">
+      <div>
+        <div style="font-size:0.75rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.05em;">Chantier 5 • Modélisation politique sur mesure</div>
+        <h3 class="modal-title" id="coalitionsModalTitle" style="display:flex; align-items:center; gap:0.5rem; margin-top:0.2rem;">
+          🏛️ Constructeur de Coalitions Parlementaires
+        </h3>
+        <div style="font-size:0.83rem; color:var(--text-muted); margin-top:0.25rem; line-height:1.4;">
+          Glissez-déposez les partis politiques pour composer vos coalitions. Le vote de chaque bloc est calculé selon la <strong>majorité des sièges</strong> de ses membres sur chaque scrutin (seuil de majorité absolue : <strong>289 sièges</strong>).
+        </div>
+      </div>
+      <button type="button" class="modal-close-btn" onclick="closeCoalitionsModal()" title="Fermer la fenêtre (Échap)">×</button>
+    </div>
+
+    <!-- Barre de Presets rapides -->
+    <div class="coalition-presets-bar">
+      <span class="coalition-presets-label">⚡ Préréglages :</span>
+      <button type="button" class="btn-preset" onclick="applyCoalitionPreset('leg17_default')">⭐ 17ᵉ Législature (Barnier / NFP / RN)</button>
+      <button type="button" class="btn-preset" onclick="applyCoalitionPreset('leg17_no_lr')">🏛️ Sans LR (Bloc Central seul)</button>
+      <button type="button" class="btn-preset" onclick="applyCoalitionPreset('bipolar')">⚖️ Bipolarisation Droite/Gauche</button>
+      <button type="button" class="btn-preset btn-preset-reset" onclick="applyCoalitionPreset('reset')">🔄 Réinitialiser</button>
+    </div>
+
+    <div class="modal-body coalition-builder-body">
+      <!-- Zone des coalitions créées -->
+      <div class="coalitions-grid-container" id="coalitionsContainer">
+        <!-- Rendu dynamique des blocs de coalition -->
+      </div>
+
+      <!-- Zone des partis indépendants / hors coalition -->
+      <div class="unassigned-dock-container">
+        <div class="unassigned-header">
+          <div class="unassigned-title">
+            <span>📌 Partis indépendants / Hors coalition</span>
+            <span class="badge-seats" id="unassignedSeatsBadge">0 sièges</span>
+          </div>
+          <span class="unassigned-hint">Ces partis seront étudiés individuellement dans la Matrice et le Face-à-face.</span>
+        </div>
+        <div class="coalition-dropzone unassigned-dropzone" id="unassignedDropzone" ondragover="onCoalitionDragOver(event)" ondragleave="onCoalitionDragLeave(event)" ondrop="onCoalitionDrop(event, 'unassigned')">
+          <!-- Jetons de partis non assignés -->
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+      <button type="button" class="btn-add-coalition" onclick="addNewCoalition()">
+        <span>➕</span> Ajouter une coalition
+      </button>
+      <div style="display:flex; gap:0.65rem; align-items:center;">
+        <button type="button" class="modal-btn-secondary" onclick="closeCoalitionsModal()">Annuler</button>
+        <button type="button" class="modal-btn-primary" onclick="applyAndSaveCoalitions()">
+          <span>✅</span> Appliquer à l'Observatoire
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER CITOYEN UNIFIÉ -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-title">
+        <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-right: 0.35rem;">AN</span> Observatoire des Votes Parlementaires
+      </div>
+      <p class="footer-desc">
+        Plateforme indépendante et citoyenne d'analyse de données publiques des scrutins de l'Assemblée nationale (16ᵉ &amp; 17ᵉ législatures de la Vᵉ République). Données brutes ouvertes sans interprétation partisane.
+      </p>
+    </div>
+
+    <div class="footer-links">
+      <button type="button" class="footer-btn-link" onclick="openMethodologyModal()">
+        📖 Méthodologie &amp; Définitions
+      </button>
+      <a href="https://data.assemblee-nationale.fr/" target="_blank" rel="noopener noreferrer" class="footer-a-link">
+        🏛️ Open Data AN ↗
+      </a>
+      <a href="https://www.assemblee-nationale.fr/" target="_blank" rel="noopener noreferrer" class="footer-a-link">
+        🇫🇷 assemblee-nationale.fr ↗
+      </a>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    Projet citoyen libre et indépendant • Données officielles ouvertes de la République Française • Scrutins solennels et ordinaires consolidés
+  </div>
+</footer>
+
+
+  <!-- Scripts applicatifs modulaires -->
+  <script defer src="js/constants.js"></script>
+  <script defer src="js/hemicycle.js"></script>
+  <script defer src="js/charts.js"></script>
+  <script defer src="js/share-card.js"></script>
+  <script defer src="js/attendance.js"></script>
+  <script defer src="js/app.js"></script>
 </body>
 </html>
