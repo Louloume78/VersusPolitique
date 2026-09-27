@@ -19,17 +19,17 @@ Application web citoyenne et interactive d'analyse et de visualisation des scrut
 ```text
 ├── index.html                           # Interface monopage (SPA)
 ├── style.css                            # Feuilles de style responsives & épurées
+├── assets/                              # Ressources visuelles (og-preview.png, etc.)
 ├── js/
 │   ├── constants.js                     # Couleurs officielles, mapping des commissions & état
 │   ├── charts.js                        # Graphiques Chart.js (radar, barres)
+│   ├── hemicycle.js                     # Visualisation interactive de l'hémicycle
+│   ├── attendance.js                    # Module d'assiduité parlementaire & Députoscope
 │   ├── share-card.js                    # Moteur Canvas 2D pour cartes HD citoyennes
-│   └── app.js                           # Contrôleur applicatif & navigation
-├── votes_majeurs.json                   # Base allégée (chargement instantané ~428 Ko)
-├── votes_enriched_complete_final.json   # Base complète consolidée (12 539 scrutins)
-├── generate_majors_dataset.py           # Extraction des textes majeurs
-├── process_votes_final.py               # Consolidation des données brutes AN
-├── classify_votes_nlp.py                # Moteur de classification sémantique IA (mDeBERTa-v3)
-└── PROJECT_STATUS.md                    # Spécifications détaillées & suivi du projet
+│   ├── router.js                        # Gestion de l'historique et routage d'onglets
+│   └── app.js                           # Contrôleur applicatif central & navigation
+├── deputes_assiduite.json               # Métriques d'assiduité et palmarès des députés
+└── votes_enriched_complete_final.json   # Base complète consolidée (12 539 scrutins)
 ```
 
 ---

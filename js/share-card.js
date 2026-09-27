@@ -134,6 +134,58 @@ function wrapTextWithLimit(ctx, text, x, y, maxWidth, lineHeight, maxLines = 4) 
   return currentY;
 }
 
+// Palette thématique dynamique pour les fiches citoyennes (suit SITE_THEME)
+function getCardThemeColors() {
+  const isDark = (typeof getSiteTheme === 'function' ? getSiteTheme() : (typeof SITE_THEME !== 'undefined' ? SITE_THEME : 'dark')) !== 'light';
+  if (isDark) {
+    return {
+      isDark: true,
+      bgGrad1: '#0a0f1d',
+      bgGrad2: '#070b16',
+      bgGrad3: '#030712',
+      frameBg: 'rgba(15, 23, 42, 0.55)',
+      frameBorder: 'rgba(255, 255, 255, 0.09)',
+      brandText: '#38bdf8',
+      pillBg: 'rgba(255, 255, 255, 0.07)',
+      pillBorder: 'rgba(255, 255, 255, 0.16)',
+      pillText: '#e2e8f0',
+      titleColor: '#ffffff',
+      metaColor: '#94a3b8',
+      boxBg: 'rgba(255, 255, 255, 0.04)',
+      boxBorder: 'rgba(255, 255, 255, 0.08)',
+      textPrimary: '#f8fafc',
+      textSecondary: '#cbd5e1',
+      textMuted: '#94a3b8',
+      footerLine: 'rgba(255, 255, 255, 0.1)',
+      footerText: '#64748b',
+      footerBrand: '#94a3b8'
+    };
+  } else {
+    return {
+      isDark: false,
+      bgGrad1: '#f8fafc',
+      bgGrad2: '#f1f5f9',
+      bgGrad3: '#e2e8f0',
+      frameBg: 'rgba(255, 255, 255, 0.85)',
+      frameBorder: 'rgba(15, 23, 42, 0.10)',
+      brandText: '#0284c7',
+      pillBg: 'rgba(15, 23, 42, 0.05)',
+      pillBorder: 'rgba(15, 23, 42, 0.12)',
+      pillText: '#334155',
+      titleColor: '#0f172a',
+      metaColor: '#475569',
+      boxBg: 'rgba(15, 23, 42, 0.03)',
+      boxBorder: 'rgba(15, 23, 42, 0.08)',
+      textPrimary: '#0f172a',
+      textSecondary: '#334155',
+      textMuted: '#64748b',
+      footerLine: 'rgba(15, 23, 42, 0.1)',
+      footerText: '#64748b',
+      footerBrand: '#475569'
+    };
+  }
+}
+
 // ==========================================================
 // 1. RENDU CANVAS 2D : CARTE FACE-À-FACE (Style Spotify Wrapped)
 // ==========================================================
@@ -143,42 +195,46 @@ function renderShareCardToCanvas(d, periodLabel, modeText) {
   const ctx = canvas.getContext('2d');
   const W = 1080;
   const H = 1350;
+  canvas.width = W;
+  canvas.height = H;
 
   ctx.clearRect(0, 0, W, H);
 
-  // 1. Fond sombre élégant avec dégradé subtil
+  const theme = getCardThemeColors();
+
+  // 1. Fond avec dégradé subtil
   const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-  bgGrad.addColorStop(0, '#0a0f1d');
-  bgGrad.addColorStop(0.5, '#070b16');
-  bgGrad.addColorStop(1, '#030712');
+  bgGrad.addColorStop(0, theme.bgGrad1);
+  bgGrad.addColorStop(0.5, theme.bgGrad2);
+  bgGrad.addColorStop(1, theme.bgGrad3);
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
   // 2. Halos lumineux d'ambiance (Style Spotify)
   const aura1 = ctx.createRadialGradient(W * 0.85, 120, 10, W * 0.85, 120, 420);
-  aura1.addColorStop(0, 'rgba(16, 185, 129, 0.22)');
+  aura1.addColorStop(0, theme.isDark ? 'rgba(16, 185, 129, 0.22)' : 'rgba(16, 185, 129, 0.12)');
   aura1.addColorStop(1, 'rgba(16, 185, 129, 0)');
   ctx.fillStyle = aura1;
   ctx.fillRect(0, 0, W, H);
 
   const aura2 = ctx.createRadialGradient(W * 0.15, H * 0.52, 10, W * 0.15, H * 0.52, 450);
-  aura2.addColorStop(0, 'rgba(14, 165, 233, 0.18)');
+  aura2.addColorStop(0, theme.isDark ? 'rgba(14, 165, 233, 0.18)' : 'rgba(14, 165, 233, 0.10)');
   aura2.addColorStop(1, 'rgba(14, 165, 233, 0)');
   ctx.fillStyle = aura2;
   ctx.fillRect(0, 0, W, H);
 
   const aura3 = ctx.createRadialGradient(W * 0.6, H * 0.9, 10, W * 0.6, H * 0.9, 400);
-  aura3.addColorStop(0, 'rgba(245, 158, 11, 0.12)');
+  aura3.addColorStop(0, theme.isDark ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.08)');
   aura3.addColorStop(1, 'rgba(245, 158, 11, 0)');
   ctx.fillStyle = aura3;
   ctx.fillRect(0, 0, W, H);
 
   // 3. Cadre conteneur de la carte avec bordure fine vitrée
   drawRoundRect(ctx, 40, 40, W - 80, H - 80, 36);
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+  ctx.fillStyle = theme.frameBg;
   ctx.fill();
   ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.09)';
+  ctx.strokeStyle = theme.frameBorder;
   ctx.stroke();
 
   // 4. En-tête : Titre citoyen + Badge période
@@ -188,7 +244,7 @@ function renderShareCardToCanvas(d, periodLabel, modeText) {
   ctx.fill();
 
   ctx.font = '700 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#38bdf8';
+  ctx.fillStyle = theme.brandText;
   ctx.fillText('OBSERVATOIRE DES VOTES PARLEMENTAIRES', 104, 107);
 
   const pillText = `${periodLabel}${modeText}`;
@@ -200,35 +256,35 @@ function renderShareCardToCanvas(d, periodLabel, modeText) {
   const pillY = 82;
 
   drawRoundRect(ctx, pillX, pillY, pillW, pillH, 19);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
+  ctx.fillStyle = theme.pillBg;
   ctx.fill();
   ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+  ctx.strokeStyle = theme.pillBorder;
   ctx.stroke();
 
-  ctx.fillStyle = '#e2e8f0';
+  ctx.fillStyle = theme.pillText;
   ctx.fillText(pillText, pillX + 17, pillY + 25);
 
   // 5. Bloc Face-à-face des 2 Groupes
   ctx.font = '700 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#94a3b8';
+  ctx.fillStyle = theme.textMuted;
   ctx.fillText('FACE-À-FACE PARLEMENTAIRE', 84, 172);
 
   // Carte Groupe A
   drawRoundRect(ctx, 80, 190, 420, 86, 18);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.fillStyle = theme.boxBg;
   ctx.fill();
   ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.11)';
+  ctx.strokeStyle = theme.boxBorder;
   ctx.stroke();
   if (d.entityA && d.entityA.color) {
     ctx.fillStyle = d.entityA.color;
     ctx.beginPath();
     ctx.arc(98, 233, 6, 0, Math.PI * 2);
     ctx.fill();
-    fitAndDrawText(ctx, d.gA, 114, 244, 360, 28, 18, '#ffffff');
+    fitAndDrawText(ctx, d.gA, 114, 244, 360, 28, 18, theme.titleColor);
   } else {
-    fitAndDrawText(ctx, d.gA, 102, 244, 380, 30, 20, '#ffffff');
+    fitAndDrawText(ctx, d.gA, 102, 244, 380, 30, 20, theme.titleColor);
   }
 
   // Pastille "VS"
@@ -243,45 +299,45 @@ function renderShareCardToCanvas(d, periodLabel, modeText) {
 
   // Carte Groupe B
   drawRoundRect(ctx, 580, 190, 420, 86, 18);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.fillStyle = theme.boxBg;
   ctx.fill();
   ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.11)';
+  ctx.strokeStyle = theme.boxBorder;
   ctx.stroke();
   if (d.entityB && d.entityB.color) {
     ctx.fillStyle = d.entityB.color;
     ctx.beginPath();
     ctx.arc(598, 233, 6, 0, Math.PI * 2);
     ctx.fill();
-    fitAndDrawText(ctx, d.gB, 614, 244, 360, 28, 18, '#ffffff');
+    fitAndDrawText(ctx, d.gB, 614, 244, 360, 28, 18, theme.titleColor);
   } else {
-    fitAndDrawText(ctx, d.gB, 602, 244, 380, 30, 20, '#ffffff');
+    fitAndDrawText(ctx, d.gB, 602, 244, 380, 30, 20, theme.titleColor);
   }
 
   // 6. Bloc Héroïque : Taux d'accord global (Format Spotify Wrapped)
   drawRoundRect(ctx, 80, 305, 920, 335, 26);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
+  ctx.fillStyle = theme.boxBg;
   ctx.fill();
   ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.strokeStyle = theme.boxBorder;
   ctx.stroke();
 
   ctx.font = '700 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#94a3b8';
+  ctx.fillStyle = theme.textMuted;
   ctx.fillText("TAUX D'ACCORD GLOBAL DE VOTE", 120, 355);
 
   // Score géant
   ctx.font = '900 110px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = theme.titleColor;
   ctx.fillText(`${d.totalAccordPct}%`, 116, 465);
 
   const scoreWidth = ctx.measureText(`${d.totalAccordPct}%`).width;
   ctx.font = '600 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#e2e8f0';
+  ctx.fillStyle = theme.textPrimary;
   ctx.fillText(`des scrutins votés de concert`, 140 + scoreWidth, 424);
 
   ctx.font = '500 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#94a3b8';
+  ctx.fillStyle = theme.textMuted;
   ctx.fillText(`sur ${d.totalSharedVotes.toLocaleString('fr-FR')} scrutins communs analysés`, 140 + scoreWidth, 458);
 
   // Barre segmentée de répartition
@@ -302,14 +358,14 @@ function renderShareCardToCanvas(d, periodLabel, modeText) {
   // Tuile 1 : Votes Pour
   const t1X = 80;
   drawRoundRect(ctx, t1X, tileY, tileW, tileH, 20);
-  ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+  ctx.fillStyle = theme.isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.06)';
   ctx.fill();
   ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+  ctx.strokeStyle = theme.isDark ? 'rgba(16, 185, 129, 0.35)' : 'rgba(16, 185, 129, 0.25)';
   ctx.stroke();
 
   ctx.font = '700 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#34d399';
+  ctx.fillStyle = theme.isDark ? '#34d399' : '#059669';
   ctx.fillText('VOTES « POUR »', t1X + 24, tileY + 42);
 
   ctx.font = '800 52px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -317,99 +373,99 @@ function renderShareCardToCanvas(d, periodLabel, modeText) {
   ctx.fillText(`${d.pourPct}%`, t1X + 24, tileY + 112);
 
   ctx.font = '600 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#f8fafc';
+  ctx.fillStyle = theme.titleColor;
   ctx.fillText(`${d.pourPourCount.toLocaleString('fr-FR')} textes`, t1X + 24, tileY + 155);
 
   ctx.font = '500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#a7f3d0';
+  ctx.fillStyle = theme.isDark ? '#a7f3d0' : '#047857';
   ctx.fillText('Adoptions conjointes', t1X + 24, tileY + 186);
 
   // Tuile 2 : Rejets communs (Opposition conjointe)
   const t2X = t1X + tileW + tileGap;
   drawRoundRect(ctx, t2X, tileY, tileW, tileH, 20);
-  ctx.fillStyle = 'rgba(14, 165, 233, 0.08)';
+  ctx.fillStyle = theme.isDark ? 'rgba(14, 165, 233, 0.08)' : 'rgba(14, 165, 233, 0.06)';
   ctx.fill();
   ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(14, 165, 233, 0.35)';
+  ctx.strokeStyle = theme.isDark ? 'rgba(14, 165, 233, 0.35)' : 'rgba(14, 165, 233, 0.25)';
   ctx.stroke();
 
   ctx.font = '700 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#38bdf8';
+  ctx.fillStyle = theme.isDark ? '#38bdf8' : '#0284c7';
   ctx.fillText('REJETS CONJOINTS', t2X + 24, tileY + 42);
 
   ctx.font = '800 52px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#38bdf8';
+  ctx.fillStyle = theme.isDark ? '#38bdf8' : '#0284c7';
   ctx.fillText(`${d.contrePct}%`, t2X + 24, tileY + 112);
 
   ctx.font = '600 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#f8fafc';
+  ctx.fillStyle = theme.titleColor;
   ctx.fillText(`${d.contreContreCount.toLocaleString('fr-FR')} textes`, t2X + 24, tileY + 155);
 
   ctx.font = '500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#bae6fd';
+  ctx.fillStyle = theme.isDark ? '#bae6fd' : '#0369a1';
   ctx.fillText('Oppositions conjointes', t2X + 24, tileY + 186);
 
   // Tuile 3 : Divergences
   const t3X = t2X + tileW + tileGap;
   drawRoundRect(ctx, t3X, tileY, tileW, tileH, 20);
-  ctx.fillStyle = 'rgba(245, 158, 11, 0.08)';
+  ctx.fillStyle = theme.isDark ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.06)';
   ctx.fill();
   ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+  ctx.strokeStyle = theme.isDark ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.25)';
   ctx.stroke();
 
   ctx.font = '700 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#fbbf24';
+  ctx.fillStyle = theme.isDark ? '#fbbf24' : '#d97706';
   ctx.fillText('DIVERGENCES', t3X + 24, tileY + 42);
 
   ctx.font = '800 52px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#fbbf24';
+  ctx.fillStyle = theme.isDark ? '#fbbf24' : '#d97706';
   ctx.fillText(`${d.diffPct}%`, t3X + 24, tileY + 112);
 
   ctx.font = '600 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#f8fafc';
+  ctx.fillStyle = theme.titleColor;
   ctx.fillText(`${d.diffCount.toLocaleString('fr-FR')} textes`, t3X + 24, tileY + 155);
 
   ctx.font = '500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#fde68a';
+  ctx.fillStyle = theme.isDark ? '#fde68a' : '#b45309';
   ctx.fillText('Positions opposées', t3X + 24, tileY + 186);
 
   // 8. Synthèse explicative citoyenne
   const narrY = 918;
   const narrH = 220;
   drawRoundRect(ctx, 80, narrY, 920, narrH, 22);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+  ctx.fillStyle = theme.boxBg;
   ctx.fill();
   ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.strokeStyle = theme.boxBorder;
   ctx.stroke();
 
   ctx.font = '700 19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#e2e8f0';
+  ctx.fillStyle = theme.titleColor;
   ctx.fillText("💡 DÉCRYPTAGE DU VOTE EN HÉMICYCLE", 116, narrY + 44);
 
   ctx.font = '400 21px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#cbd5e1';
+  ctx.fillStyle = theme.textSecondary;
   const narrativeText = `Sur les textes où les deux formations ont pris part au vote (${periodLabel}${modeText}), ${d.gA} et ${d.gB} ont voté de manière identique dans ${d.totalAccordPct}% des cas (dont ${d.pourPct}% d'adoptions conjointes et ${d.contrePct}% de rejets conjoints). Dans ${d.diffPct}% des scrutins, leurs votes ont divergé directement.`;
   wrapText(ctx, narrativeText, 116, narrY + 86, 848, 32);
 
-  // 9. Pied de page & Sceau de confiance
-  const footY = 1205;
+  // 9. Pied de page & Sceau de confiance (Sécurisé sans rognage)
+  const footY = H - 56;
   ctx.beginPath();
-  ctx.moveTo(80, footY);
-  ctx.lineTo(W - 80, footY);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.moveTo(80, footY - 14);
+  ctx.lineTo(W - 80, footY - 14);
+  ctx.strokeStyle = theme.footerLine;
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  ctx.font = '500 19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#64748b';
-  ctx.fillText("🏛️ Données vérifiées • Open Data officiel de l'Assemblée nationale", 84, footY + 48);
+  ctx.font = '500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.footerText;
+  ctx.fillText("🏛️ Données vérifiées • Open Data officiel de l'Assemblée nationale", 84, footY + 12);
 
-  ctx.font = '700 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#94a3b8';
+  ctx.font = '700 19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.footerBrand;
   ctx.textAlign = 'right';
-  ctx.fillText("VersusPolitique / Observatoire citoyen", W - 84, footY + 48);
+  ctx.fillText("VersusPolitique / Observatoire citoyen", W - 84, footY + 12);
   ctx.textAlign = 'left';
 }
 
@@ -749,54 +805,51 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
   const ctx = canvas.getContext('2d');
   const W = 1080;
   const H = 1350;
+  canvas.width = W;
+  canvas.height = H;
 
   ctx.clearRect(0, 0, W, H);
 
+  const theme = getCardThemeColors();
   const isAdopte = (s.sort || '').toLowerCase().includes('adopt');
   const outcomeLabel = isAdopte ? 'ADOPTÉ' : 'REJETÉ';
   const outcomeColor = isAdopte ? '#10b981' : '#ef4444';
 
-  // 1. Fond sombre élégant avec dégradé subtil
+  // 1. Fond avec dégradé subtil
   const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-  bgGrad.addColorStop(0, '#0a0f1d');
-  bgGrad.addColorStop(0.5, '#070b16');
-  bgGrad.addColorStop(1, '#030712');
+  bgGrad.addColorStop(0, theme.bgGrad1);
+  bgGrad.addColorStop(0.5, theme.bgGrad2);
+  bgGrad.addColorStop(1, theme.bgGrad3);
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
   // 2. Halos d'ambiance
   if (isAdopte) {
     const aura1 = ctx.createRadialGradient(W * 0.85, 120, 10, W * 0.85, 120, 420);
-    aura1.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+    aura1.addColorStop(0, theme.isDark ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.15)');
     aura1.addColorStop(1, 'rgba(16, 185, 129, 0)');
     ctx.fillStyle = aura1;
     ctx.fillRect(0, 0, W, H);
   } else {
     const aura1 = ctx.createRadialGradient(W * 0.85, 120, 10, W * 0.85, 120, 420);
-    aura1.addColorStop(0, 'rgba(239, 68, 68, 0.25)');
+    aura1.addColorStop(0, theme.isDark ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.15)');
     aura1.addColorStop(1, 'rgba(239, 68, 68, 0)');
     ctx.fillStyle = aura1;
     ctx.fillRect(0, 0, W, H);
   }
 
   const aura2 = ctx.createRadialGradient(W * 0.15, H * 0.55, 10, W * 0.15, H * 0.55, 450);
-  aura2.addColorStop(0, 'rgba(14, 165, 233, 0.16)');
+  aura2.addColorStop(0, theme.isDark ? 'rgba(14, 165, 233, 0.16)' : 'rgba(14, 165, 233, 0.10)');
   aura2.addColorStop(1, 'rgba(14, 165, 233, 0)');
   ctx.fillStyle = aura2;
   ctx.fillRect(0, 0, W, H);
 
-  const aura3 = ctx.createRadialGradient(W * 0.5, H * 0.92, 10, W * 0.5, H * 0.92, 400);
-  aura3.addColorStop(0, 'rgba(99, 102, 241, 0.14)');
-  aura3.addColorStop(1, 'rgba(99, 102, 241, 0)');
-  ctx.fillStyle = aura3;
-  ctx.fillRect(0, 0, W, H);
-
   // 3. Cadre conteneur avec bordure vitrée
   drawRoundRect(ctx, 40, 40, W - 80, H - 80, 36);
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+  ctx.fillStyle = theme.frameBg;
   ctx.fill();
   ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.09)';
+  ctx.strokeStyle = theme.frameBorder;
   ctx.stroke();
 
   // 4. En-tête : Logo citoyen + Badge numéro
@@ -806,7 +859,7 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
   ctx.fill();
 
   ctx.font = '700 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#38bdf8';
+  ctx.fillStyle = theme.brandText;
   ctx.fillText('OBSERVATOIRE DES VOTES PARLEMENTAIRES', 104, 105);
 
   const pillText = `Scrutin n°${s.id} • ${s.legislature || '17'}e Législature`;
@@ -818,33 +871,33 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
   const pillY = 80;
 
   drawRoundRect(ctx, pillX, pillY, pillW, pillH, 19);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
+  ctx.fillStyle = theme.pillBg;
   ctx.fill();
   ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+  ctx.strokeStyle = theme.pillBorder;
   ctx.stroke();
 
-  ctx.fillStyle = '#e2e8f0';
+  ctx.fillStyle = theme.pillText;
   ctx.fillText(pillText, pillX + 17, pillY + 25);
 
   // 5. Titre du scrutin
-  ctx.font = '700 25px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#f8fafc';
-  const endTitleY = wrapTextWithLimit(ctx, s.titre, 84, 168, 912, 34, 3);
+  ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.titleColor;
+  const endTitleY = wrapTextWithLimit(ctx, s.titre, 84, 165, 912, 33, 2);
 
   // 6. Métadonnées (Date + Commission)
-  const metaY = Math.max(endTitleY + 28, 268);
+  const metaY = endTitleY + 26;
   ctx.font = '600 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#94a3b8';
+  ctx.fillStyle = theme.metaColor;
   const dateStr = s.date ? `📅 ${s.date}` : '📅 Date non renseignée';
   const commStr = s.commission ? `🏛️ ${s.commission}` : '🏛️ Séance publique';
   ctx.fillText(`${dateStr}   •   ${commStr}`, 84, metaY);
 
   // 7. Bannière officielle avec décompte global intégré
-  const bannerY = metaY + 16;
-  const bannerH = 76;
+  const bannerY = metaY + 14;
+  const bannerH = 74;
   const bannerW = 912;
-  drawRoundRect(ctx, 84, bannerY, bannerW, bannerH, 18);
+  drawRoundRect(ctx, 84, bannerY, bannerW, bannerH, 16);
 
   const syn = s.synthese || {};
   let totalP = 0, totalC = 0, totalA = 0;
@@ -856,64 +909,61 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
   const contreCount = syn.contre != null ? syn.contre : totalC;
   const abstCount = syn.abstentions != null ? syn.abstentions : totalA;
   const votantsCount = syn.votants != null ? syn.votants : (pourCount + contreCount + abstCount);
+  const exprimesCount = syn.exprimes != null ? syn.exprimes : (pourCount + contreCount);
   const isMotionCensure = (s.titre || '').toLowerCase().includes('censure') || (s.sort || '').toLowerCase().includes('censure');
-  const majRequise = isMotionCensure ? 289 : (votantsCount > 0 ? (Math.floor(votantsCount / 2) + 1) : 0);
+  const majRequise = isMotionCensure ? 289 : (exprimesCount > 0 ? (Math.floor(exprimesCount / 2) + 1) : 0);
 
   if (isAdopte) {
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.14)';
+    ctx.fillStyle = theme.isDark ? 'rgba(16, 185, 129, 0.14)' : 'rgba(16, 185, 129, 0.12)';
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#10b981';
     ctx.stroke();
 
-    ctx.font = '800 23px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = '#34d399';
+    ctx.font = '800 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = theme.isDark ? '#34d399' : '#059669';
     ctx.textAlign = 'center';
-    ctx.fillText('✓  TEXTE ADOPTÉ PAR L\'ASSEMBLÉE NATIONALE', W / 2, bannerY + 34);
+    ctx.fillText('✓  TEXTE ADOPTÉ PAR L\'ASSEMBLÉE NATIONALE', W / 2, bannerY + 33);
   } else {
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.14)';
+    ctx.fillStyle = theme.isDark ? 'rgba(239, 68, 68, 0.14)' : 'rgba(239, 68, 68, 0.10)';
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#ef4444';
     ctx.stroke();
 
-    ctx.font = '800 23px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = '#f87171';
+    ctx.font = '800 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = theme.isDark ? '#f87171' : '#dc2626';
     ctx.textAlign = 'center';
-    ctx.fillText('✕  TEXTE REJETÉ PAR L\'ASSEMBLÉE NATIONALE', W / 2, bannerY + 34);
+    ctx.fillText('✕  TEXTE REJETÉ PAR L\'ASSEMBLÉE NATIONALE', W / 2, bannerY + 33);
   }
 
   // Sous-ligne chiffrée dans la bannière
   ctx.font = '600 15.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#e2e8f0';
+  ctx.fillStyle = theme.isDark ? '#e2e8f0' : '#1e293b';
   ctx.textAlign = 'center';
   ctx.fillText(
     `🟢 ${pourCount} Pour   •   🔵 ${contreCount} Contre   •   🟠 ${abstCount} Abstention   •   👥 ${votantsCount} Votants / 577`,
     W / 2,
-    bannerY + 61
+    bannerY + 59
   );
   ctx.textAlign = 'left';
 
   // 8. Hémicycle Parlementaire Vectoriel 2D
-  const hemiHeadingY = bannerY + bannerH + 30;
-  ctx.font = '700 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#94a3b8';
-  ctx.fillText("PROJECTION SPATIALE & DÉPUTÉS PRÉSENTS (577 SIÈGES)", 84, hemiHeadingY);
-
+  // Positionnement aéré laissant un espace vide net avant la liste des partis
   const cx = 540;
-  const cy = 690;
-  const rIn = 145;
-  const rOut = 280;
+  const cy = Math.max(bannerY + bannerH + 260, 610);
+  const rIn = 125;
+  const rOut = 245;
   const deltaR = rOut - rIn;
-  const coverageDeg = 220;
-  const startDeg = 200;
+  const coverageDeg = 216;
+  const startDeg = 198;
   const gapDeg = 1.0;
   const totalSeats = 577;
 
   // Rail arrière-plan
   ctx.save();
   ctx.lineWidth = 1.2;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.strokeStyle = theme.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(15, 23, 42, 0.1)';
   drawCanvasArcWedge(ctx, cx, cy, rIn - 1.5, rOut + 1.5, startDeg, startDeg - coverageDeg);
   ctx.stroke();
   ctx.restore();
@@ -965,9 +1015,8 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
   hemiGroupSectors.forEach(sec => {
     const { shortName, pos, nv, presents, presenceRatio, startAngle, endAngle, midAngle } = sec;
 
-    let mainColor = '#475569';
-    let strokeColor = '#334155';
-    const isVoted = Boolean(pos && presents > 0);
+    let mainColor = theme.isDark ? '#475569' : '#94a3b8';
+    let strokeColor = theme.isDark ? '#334155' : '#64748b';
 
     if (pos === 'POUR') {
       mainColor = '#10b981'; strokeColor = '#059669';
@@ -979,21 +1028,21 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
 
     // 1. Fond de travée (gabarit 100%)
     drawCanvasArcWedge(ctx, cx, cy, rIn, rOut, startAngle, endAngle);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.fillStyle = theme.boxBg;
     ctx.fill();
     ctx.lineWidth = 0.8;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.strokeStyle = theme.boxBorder;
     ctx.stroke();
 
     const isFullyAbsent = (presents === 0);
 
     if (isFullyAbsent) {
-      // Groupe 100% absent : travée entière vide / hachurée
+      // Groupe 100% absent
       drawCanvasArcWedge(ctx, cx, cy, rIn, rOut, startAngle, endAngle);
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.14)';
+      ctx.fillStyle = theme.isDark ? 'rgba(148, 163, 184, 0.14)' : 'rgba(148, 163, 184, 0.20)';
       ctx.fill();
       ctx.lineWidth = 0.8;
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+      ctx.strokeStyle = theme.isDark ? 'rgba(148, 163, 184, 0.25)' : 'rgba(148, 163, 184, 0.35)';
       ctx.stroke();
     } else {
       // 2. Hauteur de présence
@@ -1004,10 +1053,10 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
       // 3. Frange des absents
       if (hasAbsents) {
         drawCanvasArcWedge(ctx, cx, cy, rEff, rOut, startAngle, endAngle);
-        ctx.fillStyle = 'rgba(148, 163, 184, 0.13)';
+        ctx.fillStyle = theme.isDark ? 'rgba(148, 163, 184, 0.13)' : 'rgba(148, 163, 184, 0.22)';
         ctx.fill();
         ctx.lineWidth = 0.8;
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+        ctx.strokeStyle = theme.isDark ? 'rgba(148, 163, 184, 0.25)' : 'rgba(148, 163, 184, 0.35)';
         ctx.stroke();
       }
 
@@ -1026,33 +1075,33 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
     const lx = cx + labelR * Math.cos(rad);
     const ly = cy - labelR * Math.sin(rad);
 
-    ctx.font = '800 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '800 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = theme.textSecondary;
     ctx.textAlign = 'center';
     ctx.fillText(shortName, lx, ly + 5);
   });
 
   // 9. Perchoir central sur l'hémicycle
   drawRoundRect(ctx, cx - 75, cy - 78, 150, 36, 18);
-  ctx.fillStyle = isAdopte ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+  ctx.fillStyle = isAdopte ? (theme.isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.15)') : (theme.isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.15)');
   ctx.fill();
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = outcomeColor;
   ctx.stroke();
 
   ctx.font = '800 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = isAdopte ? '#34d399' : '#f87171';
+  ctx.fillStyle = isAdopte ? (theme.isDark ? '#34d399' : '#059669') : (theme.isDark ? '#f87171' : '#dc2626');
   ctx.textAlign = 'center';
   ctx.fillText(outcomeLabel, cx, cy - 54);
 
   drawRoundRect(ctx, cx - 110, cy - 30, 220, 26, 6);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.fillStyle = theme.isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)';
   ctx.fill();
   ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.strokeStyle = theme.boxBorder;
   ctx.stroke();
 
-  ctx.font = '700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '700 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillStyle = '#10b981';
   ctx.fillText(`● ${pourCount}`, cx - 60, cy - 13);
@@ -1061,102 +1110,102 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
   ctx.fillStyle = '#f59e0b';
   ctx.fillText(`● ${abstCount}`, cx + 60, cy - 13);
 
-  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#94a3b8';
-  ctx.fillText(`${votantsCount} présents • Maj. requise : ${majRequise}`, cx, cy + 16);
+  ctx.font = '600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.textMuted;
+  ctx.fillText(`${exprimesCount} exprimés (${votantsCount} votants) • Maj. requise : ${majRequise}`, cx, cy + 16);
   ctx.textAlign = 'left';
 
-  // 10. Légende sous l'hémicycle
-  const legendBoxY = 808;
-  drawRoundRect(ctx, 84, legendBoxY, 912, 42, 10);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+  // 10. Légende sous l'hémicycle (espacement aéré et net sous l'hémicycle)
+  const legendBoxY = Math.max(cy + 130, 740);
+  drawRoundRect(ctx, 84, legendBoxY, 912, 40, 10);
+  ctx.fillStyle = theme.boxBg;
   ctx.fill();
   ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+  ctx.strokeStyle = theme.boxBorder;
   ctx.stroke();
 
   ctx.font = '600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#cbd5e1';
+  ctx.fillStyle = theme.textSecondary;
   ctx.textAlign = 'center';
   ctx.fillText(
     `🟢 Pour   •   🔵 Contre   •   🟠 Abstention   •   ⚪ Frange supérieure : Députés absents (hauteur = présence)`,
     W / 2,
-    legendBoxY + 26
+    legendBoxY + 25
   );
   ctx.textAlign = 'left';
 
   // 11. Grille compacte des groupes (2 colonnes de 6 groupes)
-  const compactGridY = 862;
+  const compactGridY = legendBoxY + 54;
   const colW = 444;
-  const itemH = 32;
+  const itemH = 34;
   const colGap = 24;
 
   hemiGroupSectors.slice(0, 12).forEach((sec, idx) => {
     const col = idx < 6 ? 0 : 1;
     const row = idx < 6 ? idx : (idx - 6);
     const itemX = (col === 0) ? 84 : (84 + colW + colGap);
-    const itemY = compactGridY + row * (itemH + 6);
+    const itemY = compactGridY + row * (itemH + 7);
 
-    drawRoundRect(ctx, itemX, itemY, colW, itemH, 6);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+    drawRoundRect(ctx, itemX, itemY, colW, itemH, 7);
+    ctx.fillStyle = theme.boxBg;
     ctx.fill();
     ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.strokeStyle = theme.boxBorder;
     ctx.stroke();
 
     // Pastille vote
     let dotColor = '#94a3b8';
     let voteBadgeText = 'ABS.';
-    let voteTextColor = '#94a3b8';
+    let voteTextColor = theme.textMuted;
     if (sec.pos === 'POUR') {
-      dotColor = '#10b981'; voteBadgeText = 'POUR'; voteTextColor = '#34d399';
+      dotColor = '#10b981'; voteBadgeText = 'POUR'; voteTextColor = theme.isDark ? '#34d399' : '#059669';
     } else if (sec.pos === 'CONTRE') {
-      dotColor = '#0891b2'; voteBadgeText = 'CONTRE'; voteTextColor = '#38bdf8';
+      dotColor = '#0891b2'; voteBadgeText = 'CONTRE'; voteTextColor = theme.isDark ? '#38bdf8' : '#0284c7';
     } else if (sec.pos === 'ABSTENTION') {
-      dotColor = '#f59e0b'; voteBadgeText = 'ABST.'; voteTextColor = '#fbbf24';
+      dotColor = '#f59e0b'; voteBadgeText = 'ABST.'; voteTextColor = theme.isDark ? '#fbbf24' : '#d97706';
     }
 
     ctx.beginPath();
-    ctx.arc(itemX + 16, itemY + itemH / 2, 5, 0, Math.PI * 2);
+    ctx.arc(itemX + 16, itemY + itemH / 2, 5.5, 0, Math.PI * 2);
     ctx.fillStyle = dotColor;
     ctx.fill();
 
     // Nom court
-    ctx.font = '700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '700 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = theme.titleColor;
     let labelGroup = sec.shortName;
     if (sec.groupName.length <= 26) labelGroup += ` (${sec.groupName})`;
-    ctx.fillText(labelGroup, itemX + 28, itemY + itemH / 2 + 4.5);
+    ctx.fillText(labelGroup, itemX + 28, itemY + itemH / 2 + 5);
 
     // Vote + Présence sur la droite
-    ctx.font = '800 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.font = '800 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = voteTextColor;
     ctx.textAlign = 'right';
-    ctx.fillText(voteBadgeText, itemX + colW - 110, itemY + itemH / 2 + 4.5);
+    ctx.fillText(voteBadgeText, itemX + colW - 110, itemY + itemH / 2 + 5);
 
-    ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillText(`${sec.presents}/${sec.seats} prés.`, itemX + colW - 12, itemY + itemH / 2 + 4.5);
+    ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = theme.textMuted;
+    ctx.fillText(`${sec.presents}/${sec.seats} prés.`, itemX + colW - 12, itemY + itemH / 2 + 5);
     ctx.textAlign = 'left';
   });
 
-  // 12. Pied de page
-  const footY = 1225;
+  // 12. Pied de page sécurisé sans rognage
+  const footY = H - 56;
   ctx.beginPath();
-  ctx.moveTo(84, footY);
-  ctx.lineTo(W - 84, footY);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.moveTo(84, footY - 14);
+  ctx.lineTo(W - 84, footY - 14);
+  ctx.strokeStyle = theme.footerLine;
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  ctx.font = '500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#64748b';
-  ctx.fillText("🏛️ Données officielles Open Data de l'Assemblée nationale", 84, footY + 44);
+  ctx.font = '500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.footerText;
+  ctx.fillText("🏛️ Données officielles Open Data de l'Assemblée nationale", 84, footY + 12);
 
-  ctx.font = '700 19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#94a3b8';
+  ctx.font = '700 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.footerBrand;
   ctx.textAlign = 'right';
-  ctx.fillText("Observatoire des Votes Parlementaires", W - 84, footY + 44);
+  ctx.fillText("Observatoire des Votes Parlementaires", W - 84, footY + 12);
   ctx.textAlign = 'left';
 }
 
@@ -1179,15 +1228,11 @@ function openScrutinShareModal() {
 
   const selector = document.getElementById('scrutinShareFormatSelector');
   if (selector) {
-    selector.style.setProperty('display', 'flex', 'important');
+    selector.style.setProperty('display', 'none', 'important');
   }
-  updateScrutinShareFormatButtons();
 
-  if (currentScrutinShareFormat === 'hemicycle') {
-    renderScrutinHemicycleShareCardToCanvas(s);
-  } else {
-    renderScrutinShareCardToCanvas(s);
-  }
+  // Rendu exclusif au format Hémicycle
+  renderScrutinHemicycleShareCardToCanvas(s);
 
   const nativeBtn = document.getElementById('btnNativeShare');
   if (nativeBtn) {
@@ -1432,10 +1477,13 @@ function copyShareCardText() {
     });
 
     const leg = s.legislature || '17';
-    text += `\nFiche officielle : https://www.assemblee-nationale.fr/dyn/${leg}/scrutins/${s.id}\n` +
+    const siteUrl = (typeof DeepLinkRouter !== 'undefined') ? DeepLinkRouter.buildShareUrl({ scrutin: s.id, leg: leg }) : '';
+    text += `\nLien direct interactif : ${siteUrl}\n` +
+            `Fiche officielle : https://www.assemblee-nationale.fr/dyn/${leg}/scrutins/${s.id}\n` +
             `Source : Open Data officiel de l'Assemblée nationale`;
   } else if (currentShareMode === 'deputy' && activeDeputyShare) {
     const dep = activeDeputyShare;
+    const siteUrl = (typeof DeepLinkRouter !== 'undefined') ? DeepLinkRouter.buildShareUrl({ tab: 'attendance', subview: 'deputes', depute: dep.id }) : '';
     text = `⏱️ Fiche d'Assiduité Citoyenne : ${dep.civ} ${dep.nom} (${dep.groupe})\n` +
            `📍 Circonscription : ${dep.circo || dep.departement || 'France'} • Législature(s) ${dep.legislatures.join(', ')}\n\n` +
            `• ⭐ Textes Majeurs : ${dep.taux_majeurs}% (${dep.majeurs_votes} / ${dep.majeurs_possibles} votés)\n` +
@@ -1443,12 +1491,14 @@ function copyShareCardText() {
            `• 📋 Recours Procuration : ${dep.taux_delegation}% des votes (${dep.delegation} par délégation)\n` +
            `• Profil parlementaire : ${dep.quadrant}\n\n` +
            `Médianes Assemblée nationale : Textes majeurs = 32.0% | Présence globale = 22.7%\n` +
+           (siteUrl ? `Lien direct interactif : ${siteUrl}\n` : '') +
            `Source : Observatoire des Votes Parlementaires • Open Data officiel de l'Assemblée nationale`;
   } else if (currentComparisonData) {
     const d = currentComparisonData;
     const periodVal = document.getElementById('globalPeriodFilter').value;
     const periodLabel = (periodVal === 'LEG_17') ? '17e Législature' : (periodVal === 'LEG_16' ? '16e Législature' : 'Toutes législatures');
     const majorText = globalMajorFilterOnly ? ' (Textes majeurs uniquement)' : '';
+    const siteUrl = (typeof DeepLinkRouter !== 'undefined') ? DeepLinkRouter.buildShareUrl({ tab: 'radar-time', gA: d.gA, gB: d.gB, leg: periodVal, scope: globalMajorFilterOnly ? 'MAJOR' : 'ALL' }) : '';
 
     text = `📊 Observatoire des Votes Parlementaires\n` +
            `Accord politique entre ${d.gA} et ${d.gB} : ${d.totalAccordPct}%\n\n` +
@@ -1456,6 +1506,7 @@ function copyShareCardText() {
            `• Votes « Contre » communs (opposition conjointe) : ${d.contrePct}% (${d.contreContreCount.toLocaleString('fr-FR')} scrutins)\n` +
            `• Positions opposées : ${d.diffPct}% (${d.diffCount.toLocaleString('fr-FR')} scrutins)\n\n` +
            `Périmètre : ${periodLabel}${majorText} — Total : ${d.totalSharedVotes.toLocaleString('fr-FR')} votes communs.\n` +
+           (siteUrl ? `Lien direct interactif : ${siteUrl}\n` : '') +
            `Source : Open Data officiel de l'Assemblée nationale`;
   } else {
     return;
@@ -1471,6 +1522,31 @@ function copyShareCardText() {
   }).catch(() => {
     alert("Texte prêt à copier :\n\n" + text);
   });
+}
+
+function copyShareModalDirectLink() {
+  if (typeof DeepLinkRouter === 'undefined') return;
+
+  if (currentShareMode === 'scrutin' && activeModalScrutin) {
+    const s = activeModalScrutin;
+    DeepLinkRouter.copyShareLink(
+      { scrutin: s.id, leg: s.legislature },
+      `Lien direct vers le scrutin n°${s.id} copié !`
+    );
+  } else if (currentShareMode === 'deputy' && activeDeputyShare) {
+    const dep = activeDeputyShare;
+    DeepLinkRouter.copyShareLink(
+      { tab: 'attendance', subview: 'deputes', depute: dep.id },
+      `Lien direct vers la fiche de ${dep.nom} copié !`
+    );
+  } else if (currentComparisonData) {
+    const d = currentComparisonData;
+    const periodVal = document.getElementById('globalPeriodFilter')?.value || 'ALL';
+    DeepLinkRouter.copyShareLink(
+      { tab: 'radar-time', gA: d.gA, gB: d.gB, leg: periodVal, scope: globalMajorFilterOnly ? 'MAJOR' : 'ALL' },
+      `Lien direct vers le duel ${d.gA} vs ${d.gB} copié !`
+    );
+  }
 }
 
 // ==========================================================
@@ -1514,17 +1590,19 @@ function renderDeputyShareCardToCanvas(dep) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = 1080;
-  const H = 1100;
+  const H = 1140;
   canvas.width = W;
   canvas.height = H;
 
   ctx.clearRect(0, 0, W, H);
 
-  // 1. Fond sombre élégant
+  const theme = getCardThemeColors();
+
+  // 1. Fond avec dégradé subtil
   const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-  bgGrad.addColorStop(0, '#0a0f1d');
-  bgGrad.addColorStop(0.5, '#070b16');
-  bgGrad.addColorStop(1, '#030712');
+  bgGrad.addColorStop(0, theme.bgGrad1);
+  bgGrad.addColorStop(0.5, theme.bgGrad2);
+  bgGrad.addColorStop(1, theme.bgGrad3);
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
@@ -1532,92 +1610,92 @@ function renderDeputyShareCardToCanvas(dep) {
   const groupColor = (typeof getGroupColor === 'function') ? getGroupColor(dep.groupe) : '#3b82f6';
   
   const aura1 = ctx.createRadialGradient(W * 0.8, 160, 10, W * 0.8, 160, 420);
-  aura1.addColorStop(0, groupColor + '33');
+  aura1.addColorStop(0, groupColor + (theme.isDark ? '33' : '22'));
   aura1.addColorStop(1, 'transparent');
   ctx.fillStyle = aura1;
   ctx.fillRect(0, 0, W, H);
 
   const aura2 = ctx.createRadialGradient(W * 0.2, H * 0.65, 10, W * 0.2, H * 0.65, 380);
-  aura2.addColorStop(0, '#10b98122');
+  aura2.addColorStop(0, theme.isDark ? '#10b98122' : '#10b98115');
   aura2.addColorStop(1, 'transparent');
   ctx.fillStyle = aura2;
   ctx.fillRect(0, 0, W, H);
 
   // 3. Cadre conteneur vitré
   drawRoundRect(ctx, 36, 32, W - 72, H - 64, 30);
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+  ctx.fillStyle = theme.frameBg;
   ctx.fill();
   ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.strokeStyle = theme.frameBorder;
   ctx.stroke();
 
   // 4. En-tête officiel
-  ctx.fillStyle = '#60a5fa';
-  ctx.font = '800 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.brandText;
+  ctx.font = '800 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillText('🏛️ OBSERVATOIRE DES VOTES • FICHE CITOYENNE D\'ASSIDUITÉ', 75, 78);
 
-  ctx.fillStyle = '#64748b';
-  ctx.font = '600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText(`ASSEMBLÉE NATIONALE • LÉGISLATURE(S) ${(dep.legislatures || []).join(' & ')}`, 75, 102);
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(`ASSEMBLÉE NATIONALE • LÉGISLATURE(S) ${(dep.legislatures || []).join(' & ')}`, 75, 104);
 
   // 5. Identité de l'élu
-  const nameY = 168;
-  fitAndDrawText(ctx, `${dep.civ} ${dep.nom}`, 75, nameY, W - 150, 44, 30, '#f8fafc');
+  const nameY = 166;
+  fitAndDrawText(ctx, `${dep.civ} ${dep.nom}`, 75, nameY, W - 150, 44, 30, theme.titleColor);
 
   // Badge du groupe
-  const groupY = nameY + 18;
+  const groupY = nameY + 16;
   ctx.font = '700 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  const groupW = ctx.measureText(dep.groupe).width + 34;
-  drawRoundRect(ctx, 75, groupY, groupW, 36, 9);
-  ctx.fillStyle = groupColor + '28';
+  const groupW = ctx.measureText(dep.groupe).width + 36;
+  drawRoundRect(ctx, 75, groupY, groupW, 36, 10);
+  ctx.fillStyle = groupColor + (theme.isDark ? '28' : '18');
   ctx.fill();
-  ctx.strokeStyle = groupColor + '88';
+  ctx.strokeStyle = groupColor + (theme.isDark ? '88' : '66');
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
   // Puce de couleur
   ctx.beginPath();
-  ctx.arc(92, groupY + 18, 5.5, 0, Math.PI * 2);
+  ctx.arc(94, groupY + 18, 6, 0, Math.PI * 2);
   ctx.fillStyle = groupColor;
   ctx.fill();
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(dep.groupe, 107, groupY + 24);
+  ctx.fillStyle = theme.isDark ? '#ffffff' : '#0f172a';
+  ctx.fillText(dep.groupe, 110, groupY + 24);
 
   // Circonscription
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '600 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillText(`📍 ${dep.circo || dep.departement || 'France'}`, 75 + groupW + 18, groupY + 24);
 
   // 6. Encadré Quadrant / Catégorie de mandat
-  const quadY = 242;
+  const quadY = 238;
   const qDesc = {
     'Pilier': { title: '🏛️ PILIER DE L\'HÉMICYCLE (TOP 30)', color: '#10b981', text: 'Assiduité exemplaire : forte présence globale et au cœur des grands votes politiques.' },
     'Stratège': { title: '🎯 STRATÈGE / SPÉCIALISTE (TOP 30)', color: '#3b82f6', text: 'Mobilisation ciblée : présent sur les textes majeurs, délégation sur les amendements ordinaires.' },
     'Marathonien': { title: '🌙 MARATHONIEN DE L\'OMBRE (TOP 30)', color: '#f59e0b', text: 'Présence en séance de nuit sur les longs marathons d\'amendements techniques.' },
     'Fantôme': { title: '👻 DÉCROCHAGE / ABSENTÉISME (FLOP 30)', color: '#ef4444', text: 'Participation globale et sur les textes majeurs très en retrait par rapport à l\'Assemblée.' },
-    'Standard': { title: '👤 ACTIVITÉ RÉGULIÈRE', color: '#94a3b8', text: 'Participation intermédiaire régulière, sans décrochage marqué ni sur-mobilisation atypique.' }
-  }[dep.quadrant] || { title: dep.quadrant, color: '#94a3b8', text: 'Profil calculé selon les médianes nationales de participation.' };
+    'Standard': { title: '👤 ACTIVITÉ RÉGULIÈRE', color: theme.isDark ? '#94a3b8' : '#475569', text: 'Participation intermédiaire régulière, sans décrochage marqué ni sur-mobilisation atypique.' }
+  }[dep.quadrant] || { title: dep.quadrant, color: theme.isDark ? '#94a3b8' : '#475569', text: 'Profil calculé selon les médianes nationales de participation.' };
 
   drawRoundRect(ctx, 75, quadY, W - 150, 78, 14);
-  ctx.fillStyle = qDesc.color + '15';
+  ctx.fillStyle = qDesc.color + (theme.isDark ? '15' : '10');
   ctx.fill();
-  ctx.strokeStyle = qDesc.color + '66';
+  ctx.strokeStyle = qDesc.color + (theme.isDark ? '66' : '44');
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
   ctx.fillStyle = qDesc.color;
   ctx.font = '800 19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText(qDesc.title, 98, quadY + 32);
+  ctx.fillText(qDesc.title, 98, quadY + 31);
 
-  ctx.fillStyle = '#cbd5e1';
-  ctx.font = '500 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.textSecondary;
+  ctx.font = '500 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillText(qDesc.text, 98, quadY + 58);
 
   // 7. Trois Grands Blocs Statistiques
   const boxW = W - 150;
-  const startBoxY = 338;
-  const boxH = 124;
+  const startBoxY = 332;
+  const boxH = 126;
   const boxGap = 14;
 
   // Box 1 : Textes Majeurs
@@ -1628,7 +1706,7 @@ function renderDeputyShareCardToCanvas(dep) {
     pct: dep.taux_majeurs,
     countText: `${dep.majeurs_votes} votés sur ${dep.majeurs_possibles} scrutins clés`,
     barColor: '#3b82f6'
-  });
+  }, theme);
 
   // Box 2 : Présence Globale
   drawStatBox(ctx, 75, startBoxY + boxH + boxGap, boxW, boxH, {
@@ -1638,7 +1716,7 @@ function renderDeputyShareCardToCanvas(dep) {
     pct: dep.taux_global,
     countText: `${dep.votes} votés sur ${dep.scrutins_possibles} scrutins totaux`,
     barColor: '#10b981'
-  });
+  }, theme);
 
   // Box 3 : Procuration / Délégation
   drawStatBox(ctx, 75, startBoxY + (boxH + boxGap) * 2, boxW, boxH, {
@@ -1648,93 +1726,126 @@ function renderDeputyShareCardToCanvas(dep) {
     pct: dep.taux_delegation,
     countText: `${dep.delegation} votes par procuration · ${dep.personne} votes physiques`,
     barColor: '#f59e0b'
-  });
+  }, theme);
 
   // 8. Encadré Médianes de Référence
   const benchY = startBoxY + (boxH + boxGap) * 3 + 8;
   drawRoundRect(ctx, 75, benchY, boxW, 58, 12);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+  ctx.fillStyle = theme.boxBg;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+  ctx.strokeStyle = theme.boxBorder;
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillText('📊 Médianes de référence Assemblée nationale :', 98, benchY + 25);
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = '700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.titleColor;
+  ctx.font = '700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillText('Textes majeurs = 32.0%  ·  Présence globale = 22.7%', 98, benchY + 45);
 
-  // 9. Encadré Déontologie & Travail hors Hémicycle (collé près du footer)
+  // 9. Encadré Déontologie & Travail hors Hémicycle
   const disclY = benchY + 70;
-  const disclH = 76;
+  const disclH = 80;
   drawRoundRect(ctx, 75, disclY, boxW, disclH, 12);
-  ctx.fillStyle = 'rgba(59, 130, 246, 0.07)';
+  ctx.fillStyle = theme.isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.06)';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(59, 130, 246, 0.22)';
+  ctx.strokeStyle = theme.isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(59, 130, 246, 0.20)';
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  ctx.fillStyle = '#60a5fa';
+  ctx.fillStyle = theme.isDark ? '#60a5fa' : '#2563eb';
+  ctx.font = '700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('⚖️ TRAVAIL HORS HÉMICYCLE & DÉONTOLOGIE', 98, disclY + 25);
+
+  ctx.fillStyle = theme.textSecondary;
+  ctx.font = '500 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText("L'assiduité en séance publique ne reflète qu'une partie du mandat : les travaux en commissions permanentes,", 98, disclY + 46);
+  ctx.fillText("délégations parlementaires, missions d'information et travail en circonscription justifient des absences légitimes.", 98, disclY + 66);
+
+  // 10. Pied de page aéré avec marge sécurisée (pas de rognage)
+  const footerY = H - 56;
+  ctx.beginPath();
+  ctx.moveTo(75, footerY - 14);
+  ctx.lineTo(W - 75, footerY - 14);
+  ctx.strokeStyle = theme.footerLine;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = theme.footerText;
+  ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('Source : Open Data officiel de l\'Assemblée nationale • Données publiques certifiées', 75, footerY + 8);
+  ctx.fillText('Observatoire citoyen indépendant • Réalisé à partir des décomptes nominatifs officiels', 75, footerY + 28);
+
+  ctx.fillStyle = theme.footerBrand;
   ctx.font = '700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('⚖️ TRAVAIL HORS HÉMICYCLE & DÉONTOLOGIE', 98, disclY + 24);
-
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText("L'assiduité en séance publique ne reflète qu'une partie du mandat : les travaux en commissions permanentes,", 98, disclY + 44);
-  ctx.fillText("délégations parlementaires, missions d'information et circonscriptions justifient des absences légitimes.", 98, disclY + 62);
-
-  // 10. Pied de page
-  const footerY = H - 42;
-  ctx.fillStyle = '#475569';
-  ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('Source : Open Data officiel de l\'Assemblée nationale • Données publiques certifiées', 75, footerY);
-  ctx.fillText('Observatoire citoyen indépendant • Réalisé à partir des décomptes nominatifs officiels', 75, footerY + 18);
+  ctx.textAlign = 'right';
+  ctx.fillText('VersusPolitique / Députoscope', W - 75, footerY + 18);
+  ctx.textAlign = 'left';
 }
 
-function drawStatBox(ctx, x, y, w, h, data) {
+function drawStatBox(ctx, x, y, w, h, data, theme = null) {
+  if (!theme) theme = getCardThemeColors();
+
   drawRoundRect(ctx, x, y, w, h, 18);
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+  ctx.fillStyle = theme.isDark ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255, 255, 255, 0.75)';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+  ctx.strokeStyle = theme.boxBorder;
   ctx.lineWidth = 1;
   ctx.stroke();
 
   // Titre et icône
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText(`${data.icon}  ${data.title}`, x + 24, y + 36);
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(`${data.icon}  ${data.title}`, x + 24, y + 34);
 
   // Sous-titre
-  ctx.fillStyle = '#64748b';
-  ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText(data.subtitle, x + 24, y + 58);
+  ctx.fillStyle = theme.textSecondary;
+  ctx.font = '500 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(data.subtitle, x + 24, y + 56);
 
   // Gros chiffre %
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = theme.titleColor;
   ctx.font = '800 48px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   const pctStr = `${data.pct}%`;
   const pctW = ctx.measureText(pctStr).width;
   ctx.fillText(pctStr, x + w - pctW - 24, y + 56);
 
   // Décompte
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText(data.countText, x + 24, y + 100);
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(data.countText, x + 24, y + 96);
 
-  // Barre de progression
-  const barY = y + 115;
+  // Barre de progression avec padding esthétique
+  const barY = y + 109;
   const barW = w - 48;
   const barH = 10;
+  
+  // Piste de fond
   drawRoundRect(ctx, x + 24, barY, barW, barH, 5);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.fillStyle = theme.isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(15, 23, 42, 0.08)';
   ctx.fill();
 
-  const fillW = Math.max(6, Math.round((Math.min(100, data.pct) / 100) * barW));
-  drawRoundRect(ctx, x + 24, barY, fillW, barH, 5);
+  // Remplissage avec léger retrait/padding
+  const fillW = Math.max(6, Math.round((Math.min(100, data.pct) / 100) * (barW - 2)));
+  drawRoundRect(ctx, x + 25, barY + 1, fillW, barH - 2, 4);
   ctx.fillStyle = data.barColor;
   ctx.fill();
 }
 
+// Rafraîchissement automatique de la carte citoyenne en cours si la modale de partage est ouverte
+function renderCurrentActiveShareCard() {
+  const modal = document.getElementById('shareModal');
+  if (!modal || !modal.classList.contains('active')) return;
 
+  if (currentShareMode === 'scrutin' && activeModalScrutin) {
+    renderScrutinHemicycleShareCardToCanvas(activeModalScrutin);
+  } else if (currentShareMode === 'deputy' && activeDeputyShare) {
+    renderDeputyShareCardToCanvas(activeDeputyShare);
+  } else if (currentShareMode === 'comparison' && currentComparisonData) {
+    const periodVal = document.getElementById('globalPeriodFilter') ? document.getElementById('globalPeriodFilter').value : 'ALL';
+    const periodLabel = (periodVal === 'LEG_17') ? '17e Législature' : (periodVal === 'LEG_16' ? '16e Législature' : '16e & 17e Lég.');
+    const modeText = (typeof globalMajorFilterOnly !== 'undefined' && globalMajorFilterOnly) ? ' (Textes majeurs)' : '';
+    renderShareCardToCanvas(currentComparisonData, periodLabel, modeText);
+  }
+}

@@ -12,6 +12,11 @@ function renderCharts() {
   const period = document.getElementById('globalPeriodFilter').value;
   const filtered = filterDataset(period);
 
+  // Synchronisation avec l'URL (Deep Linking Face-à-face)
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress && (typeof currentActiveTab !== 'undefined' && currentActiveTab === 'tab-radar-time')) {
+    DeepLinkRouter.setParams({ gA: gA || null, gB: gB || null });
+  }
+
   const entityA = (typeof findEntityById === 'function') ? findEntityById(gA) : { id: gA, name: gA, shortName: gA, color: '#2563eb', seats: 0 };
   const entityB = (typeof findEntityById === 'function') ? findEntityById(gB) : { id: gB, name: gB, shortName: gB, color: '#0f172a', seats: 0 };
 

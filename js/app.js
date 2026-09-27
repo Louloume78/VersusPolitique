@@ -143,6 +143,9 @@ fetch('votes_enriched_complete_final.json')
     initOnboardingBanner();
     initSelectors();
     refreshAllViews();
+    if (typeof DeepLinkRouter !== 'undefined') {
+      DeepLinkRouter.applyInitialRouting();
+    }
   })
   .catch(err => {
     console.error("Échec critique du chargement de votes_enriched_complete_final.json :", err);
@@ -224,6 +227,10 @@ function setScaleMode(mode) {
   updateScaleToggleButtons();
   updateAllEntitySelects();
   refreshAllViews();
+
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress) {
+    DeepLinkRouter.setParams({ scale: mode === 'groups' ? null : mode });
+  }
 }
 
 function updateScaleToggleButtons() {
@@ -589,13 +596,13 @@ function updateCommissionSelectOptions() {
   }
 }
 
-function setGlobalMajorFilter(scope) {
+function setGlobalMajorFilter(scope, skipRender = false) {
   if (scope === true) scope = 'MAJOR';
   else if (scope === false) scope = 'ALL';
 
   if (scope === 'ALL' && !fullDataset) {
     loadFullDataset(() => {
-      setGlobalMajorFilter('ALL');
+      setGlobalMajorFilter('ALL', skipRender);
     });
     return;
   }
@@ -618,11 +625,17 @@ function setGlobalMajorFilter(scope) {
   if (btnPivot) btnPivot.classList.toggle('active', scope === 'PIVOT');
   if (btnAll) btnAll.classList.toggle('active', scope === 'ALL');
 
-  if (currentActiveTab === 'tab-detailed') {
-    renderDetailed();
-  } else {
-    updateCommissionSelectOptions();
-    refreshAllViews();
+  if (!skipRender) {
+    if (currentActiveTab === 'tab-detailed') {
+      renderDetailed();
+    } else {
+      updateCommissionSelectOptions();
+      refreshAllViews();
+    }
+  }
+
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress) {
+    DeepLinkRouter.setParams({ scope: scope === 'MAJOR' ? null : scope });
   }
 }
 
@@ -633,6 +646,10 @@ function onGlobalPeriodChange() {
   const leg = period === 'LEG_17' ? '17' : (period === 'LEG_16' ? '16' : 'ALL');
   if (typeof setAttendanceLegislature === 'function' && attendanceData) {
     setAttendanceLegislature(leg);
+  }
+
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress) {
+    DeepLinkRouter.setParams({ leg: period === 'ALL' ? null : period });
   }
 }
 
@@ -677,6 +694,12 @@ function switchTab(tabId) {
   
   currentActiveTab = tabId;
 
+  // Synchronisation immédiate avec l'URL (Deep Linking - Clean URL par onglet dès le clic)
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress) {
+    const tabCode = tabId.replace(/^tab-/, '');
+    DeepLinkRouter.switchTabClean(tabCode, true);
+  }
+
   document.querySelectorAll('.tab-btn').forEach(btn => {
     const onClickAttr = btn.getAttribute('onclick') || '';
     btn.classList.toggle('active', onClickAttr.includes(`'${tabId}'`));
@@ -707,17 +730,17 @@ function switchTab(tabId) {
   const btnPivot = document.getElementById('btnFilterPivot');
   if (tabId === 'tab-detailed') {
     if (btnPivot) btnPivot.style.display = '';
-    setGlobalMajorFilter(currentPresetFilter || lastNonExplorerScope || 'MAJOR');
+    setGlobalMajorFilter(currentPresetFilter || lastNonExplorerScope || 'MAJOR', true);
   } else if (tabId !== 'tab-home' && tabId !== 'tab-attendance') {
     if (btnPivot) btnPivot.style.display = 'none';
-    setGlobalMajorFilter(lastNonExplorerScope || 'MAJOR');
+    setGlobalMajorFilter(lastNonExplorerScope || 'MAJOR', true);
   }
 
   if (tabId === 'tab-overview') renderOverview();
-  if (tabId === 'tab-heatmap') renderHeatmap();
-  if (tabId === 'tab-radar-time') renderCharts();
-  if (tabId === 'tab-detailed') renderDetailed();
-  if (tabId === 'tab-attendance') initAttendanceTab();
+  else if (tabId === 'tab-heatmap') renderHeatmap();
+  else if (tabId === 'tab-radar-time') renderCharts();
+  else if (tabId === 'tab-detailed') renderDetailed();
+  else if (tabId === 'tab-attendance') initAttendanceTab();
 }
 
 function toggleContextGuide(guideId) {
@@ -736,6 +759,10 @@ function setHeatmapMetric(metric) {
     btn.classList.toggle('active', clickAttr.includes(metric));
   });
   renderHeatmap();
+
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress) {
+    DeepLinkRouter.setParams({ metric: metric === 'POUR_POUR' ? null : metric });
+  }
 }
 
 function quickSearchScrutin(keyword) {
@@ -778,6 +805,11 @@ function renderOverview() {
   const dateRange = document.getElementById('globalPeriodFilter').value;
   const commission = document.getElementById('ovCommission').value;
   const filtered = filterDataset(dateRange, commission);
+
+  // Synchronisation avec l'URL (Deep Linking Alliances)
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress && (typeof currentActiveTab !== 'undefined' && currentActiveTab === 'tab-overview')) {
+    DeepLinkRouter.setParams({ ref: ref || null });
+  }
 
   const refEntity = findEntityById(ref) || { id: ref, name: ref, shortName: ref, color: '#2563eb', seats: 0, isCoalition: false, groups: [ref] };
   updateGroupColorDot('ovGroupColorDot', refEntity.color || ref);
@@ -1075,6 +1107,16 @@ function renderDetailed() {
   const search = document.getElementById('dtSearch').value.toLowerCase().trim();
   const period = document.getElementById('globalPeriodFilter').value;
 
+  // Synchronisation avec l'URL (Deep Linking Explorer)
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress && currentActiveTab === 'tab-detailed') {
+    DeepLinkRouter.setParams({
+      q: search || null,
+      group: targetGroup === 'ALL' ? null : targetGroup,
+      pos: targetPos === 'ALL' ? null : targetPos,
+      outcome: outcome === 'ALL' ? null : outcome
+    });
+  }
+
   const baseFiltered = filterDataset(period);
   const matched = [];
 
@@ -1343,6 +1385,15 @@ function openScrutinModal(scrutinId, legislature) {
     renderScrutinHemicycle(scrutin, (typeof currentHemiDisplayMode !== 'undefined') ? currentHemiDisplayMode : 'vote');
   }
 
+  // Synchronisation avec le routeur URL & métadonnées
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress) {
+    DeepLinkRouter.setParams({ 
+      scrutin: scrutin.id,
+      scrutin_leg: scrutin.legislature || ''
+    }, true);
+    DeepLinkRouter.syncMetaTags({ scrutin: scrutin });
+  }
+
   document.getElementById('scrutinModal').classList.add('active');
   document.body.style.overflow = 'hidden';
 }
@@ -1368,12 +1419,16 @@ function onTableGroupLeave() {
   }
 }
 
-
-
 function closeModal() {
   document.getElementById('scrutinModal').classList.remove('active');
   document.body.style.overflow = '';
   activeModalScrutin = null;
+
+  // Nettoyage du paramètre scrutin dans l'URL
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress) {
+    DeepLinkRouter.setParams({ scrutin: null, scrutin_leg: null });
+    DeepLinkRouter.syncMetaTags({ tab: currentActiveTab ? currentActiveTab.replace(/^tab-/, '') : 'home' });
+  }
 }
 
 function closeModalOnBackdrop(event) {
@@ -1423,4 +1478,11 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+window.addEventListener('DOMContentLoaded', () => {
+  const current = (typeof getSiteTheme === 'function') ? getSiteTheme() : 'light';
+  const toggleBtn = document.getElementById('themeToggleBtn');
+  if (toggleBtn) {
+    toggleBtn.innerHTML = (current === 'dark') ? '☀️ Mode Clair' : '🌙 Mode Sombre';
+  }
+});
 

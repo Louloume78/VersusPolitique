@@ -1,8 +1,35 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Observatoire des Votes - Assemblée Nationale</title>
+  <meta name="description" content="Ce que votent véritablement vos députés : explorez les scrutins officiels de l'Assemblée nationale, les coalitions réelles, proximités politiques et l'assiduité parlementaire.">
+  <meta name="author" content="Observatoire Citoyen des Votes">
+  <meta name="theme-color" content="#2563eb">
+
+  <!-- Open Graph / Facebook / WhatsApp / LinkedIn / Discord -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Observatoire des Votes - Assemblée Nationale">
+  <meta property="og:title" content="Observatoire des Votes - Ce que votent véritablement vos députés">
+  <meta property="og:description" content="Loin des postures médiatiques, cartographiez les alliances réelles, les fronts d'opposition et l'assiduité dans l'hémicycle grâce aux données officielles de l'Assemblée nationale.">
+  <meta property="og:image" content="assets/og-preview.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Aperçu de l'Observatoire des Votes - Assemblée Nationale">
+  <meta property="og:locale" content="fr_FR">
+
+  <!-- Twitter / X Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Observatoire des Votes - Assemblée Nationale">
+  <meta name="twitter:description" content="Ce que votent véritablement vos députés : explorez les taux d'accords réels, les coalitions et l'assiduité parlementaire en Open Data.">
+  <meta name="twitter:image" content="assets/og-preview.png">
+  <meta name="twitter:image:alt" content="Aperçu des scrutins et alliances de l'Assemblée Nationale">
+
+  <!-- Favicon SVG dynamique -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -471,6 +498,9 @@
             </span>
           </h2>
           <div class="clean-header-actions">
+            <button type="button" class="btn-share-link-pill" onclick="const gA=document.getElementById('compGroupA')?.value; const gB=document.getElementById('compGroupB')?.value; const leg=document.getElementById('globalPeriodFilter')?.value; DeepLinkRouter.copyShareLink({ tab: 'radar-time', gA: gA, gB: gB, leg: leg, scope: (typeof globalMajorFilterOnly !== 'undefined' && globalMajorFilterOnly) ? 'MAJOR' : 'ALL' }, 'Lien direct vers le Face-à-face copié !')" title="Copier le lien direct vers cette comparaison">
+              <span>🔗</span> Copier le lien
+            </button>
             <button type="button" class="share-card-trigger-btn compact" onclick="openShareModal()" title="Générer une infographie citoyenne certifiée">
               <span>📸</span> Carte HD
             </button>
@@ -559,19 +589,6 @@
         <button type="button" class="modal-close-btn" onclick="closeShareModal()" title="Fermer la fenêtre (Échap)">×</button>
       </div>
       <div class="modal-body">
-        <!-- Sélecteur de format de partage pour scrutin (Hémicycle ou Liste) -->
-        <div class="share-card-format-selector" id="scrutinShareFormatSelector" style="display: none;">
-          <span class="format-selector-label">Format de la carte :</span>
-          <div class="format-btn-group" role="group" aria-label="Format du visuel de partage">
-            <button type="button" class="format-btn active" id="btnShareFormatHemi" onclick="setScrutinShareFormat('hemicycle')">
-              🏛️ Hémicycle
-            </button>
-            <button type="button" class="format-btn" id="btnShareFormatList" onclick="setScrutinShareFormat('list')">
-              📋 Liste des groupes
-            </button>
-          </div>
-        </div>
-
         <!-- Aperçu haute fidélité du rendu Canvas 2D -->
         <div class="share-canvas-preview-wrapper">
           <canvas id="shareCanvas" width="1080" height="1350"></canvas>
@@ -584,6 +601,9 @@
         </button>
         <button type="button" class="share-action-btn secondary" id="btnCopyImage" onclick="copyShareImage()">
           <span>🖼️</span> Copier l'image
+        </button>
+        <button type="button" class="share-action-btn outline" id="btnCopyDirectLink" onclick="copyShareModalDirectLink()">
+          <span>🔗</span> Copier le lien direct
         </button>
         <button type="button" class="share-action-btn outline" id="btnNativeShare" onclick="shareImageNative()" style="display: none;">
           <span>📲</span> Partager
@@ -717,7 +737,7 @@
             👤 Députoscope &amp; Quadrant 2D
           </button>
           <button type="button" class="attendance-subnav-btn" data-view="couteau" onclick="switchAttendanceSubView('couteau')">
-            ⚖️ Scrutins au Couteau
+            ⚖️ À quelques voix près
           </button>
         </div>
       </div>
@@ -932,8 +952,11 @@
     <div class="modal-footer">
       <span style="font-size:0.8rem; color:#64748b;">Source : Open Data Assemblée nationale</span>
       <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+        <button type="button" class="btn-share-link-pill" onclick="if(activeModalScrutin) DeepLinkRouter.copyShareLink({ scrutin: activeModalScrutin.id, leg: activeModalScrutin.legislature }, 'Lien direct vers le scrutin n°' + activeModalScrutin.id + ' copié !')" title="Copier le lien direct vers la fiche de ce vote">
+          <span>🔗</span> Copier le lien
+        </button>
         <button type="button" class="share-scrutin-btn" onclick="openScrutinShareModal()">
-          <span>📸</span> Partager ce scrutin
+          <span>📸</span> Partager l'infographie
         </button>
         <a href="#" target="_blank" rel="noopener noreferrer" class="an-official-btn" id="modalOfficialLink">
           Consulter sur assemblee-nationale.fr ↗
@@ -1110,6 +1133,9 @@
     </div>
 
     <div class="footer-links">
+      <button type="button" class="footer-btn-link theme-toggle-footer-btn" id="themeToggleBtn" onclick="toggleSiteTheme()" title="Basculer entre le mode clair et le mode sombre">
+        🌓 Mode Thème
+      </button>
       <button type="button" class="footer-btn-link" onclick="openMethodologyModal()">
         📖 Méthodologie &amp; Définitions
       </button>
@@ -1130,6 +1156,7 @@
 
   <!-- Scripts applicatifs modulaires -->
   <script defer src="js/constants.js"></script>
+  <script defer src="js/router.js"></script>
   <script defer src="js/hemicycle.js"></script>
   <script defer src="js/charts.js"></script>
   <script defer src="js/share-card.js"></script>

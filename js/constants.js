@@ -3,6 +3,49 @@
 // Référentiels, constantes politiques et état global
 // ==========================================
 
+// Paramètre général du thème du site ('dark' ou 'light')
+// Les cartes partageables suivent ce paramètre général du site.
+let SITE_THEME = (typeof localStorage !== 'undefined' && localStorage.getItem('site_theme')) || 'light';
+
+function getSiteTheme() {
+  if (typeof document !== 'undefined' && document.documentElement) {
+    const dt = document.documentElement.getAttribute('data-theme');
+    if (dt === 'dark' || dt === 'light') return dt;
+  }
+  return SITE_THEME;
+}
+
+function setSiteTheme(theme) {
+  if (theme === 'dark' || theme === 'light') {
+    SITE_THEME = theme;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('site_theme', theme);
+    }
+    if (document.documentElement) {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    // Mettre à jour l'étiquette du bouton toggle s'il existe
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    if (toggleBtn) {
+      toggleBtn.innerHTML = (theme === 'dark') ? '☀️ Mode Clair' : '🌙 Mode Sombre';
+    }
+    // Re-rendre la carte citoyenne si la modale de partage est ouverte
+    if (typeof renderCurrentActiveShareCard === 'function') {
+      renderCurrentActiveShareCard();
+    }
+  }
+}
+
+function toggleSiteTheme() {
+  const current = getSiteTheme();
+  setSiteTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// Initialisation au chargement du script
+if (typeof document !== 'undefined' && document.documentElement) {
+  document.documentElement.setAttribute('data-theme', SITE_THEME);
+}
+
 const POLITICAL_SPECTRUM = [
   "Gauche Démocrate et Républicaine", "La France Insoumise", "Les Écologistes",
   "Socialistes", "LIOT", "Renaissance / EPR", "Les Démocrates (MoDem)",

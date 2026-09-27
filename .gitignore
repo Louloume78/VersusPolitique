@@ -1,20 +1,37 @@
-# Données brutes volumineuses
+# ==============================================================================
+# 1. Données brutes et volumineuses (Open Data non nécessaires au déploiement Web)
+# ==============================================================================
 Amendements_json/
 Dossiers_Legislatifs_json/
 scutins_json/
-V1.1/
-old_versions/
 
-# Exclusions strictes demandées : aucun script Python, batch, powershell, ni audit csv
+# ==============================================================================
+# 2. Archives, sauvegardes et anciennes versions
+# ==============================================================================
+old_versions/
+V1.1/
+*.bak
+*.old
+
+# ==============================================================================
+# 3. Scripts et outils de traitement locaux (exclus du build public)
+# ==============================================================================
 *.py
 *.bat
 *.ps1
+*.sh
 *.csv
-PROJECT_STATUS.md
 exact_mapping.json
 gitignore
 
-# Caches et environnements
+# Documentation de travail interne
+implementation_plan.md
+RECAP_HIERARCHISATION_VOTES.md
+PROJECT_STATUS.md
+
+# ==============================================================================
+# 4. Environnements virtuels et caches d'exécution
+# ==============================================================================
 .venv/
 venv/
 env/
@@ -26,17 +43,19 @@ __pycache__/
 huggingface/
 models/
 
-# Fichiers temporaires & OS
-*.zip
-*.tar.gz
-*.7z
-*.rar
+# ==============================================================================
+# 5. Fichiers système et résidus d'éditeurs
+# ==============================================================================
+.DS_Store
+Thumbs.db
+desktop.ini
 *.tmp
 *.log
 .vscode/
 .idea/
-.DS_Store
-Thumbs.db
-desktop.ini
-implementation_plan.md
-RECAP_HIERARCHISATION_VOTES.md
+
+# Archives compressées
+*.zip
+*.tar.gz
+*.7z
+*.rar

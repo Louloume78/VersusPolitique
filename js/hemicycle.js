@@ -205,8 +205,9 @@ function renderScrutinHemicycle(scrutin, mode = currentHemiDisplayMode) {
   const contreCount = syn.contre != null ? syn.contre : totalContreSeats;
   const abstCount = syn.abstentions != null ? syn.abstentions : totalAbstSeats;
   const votantsCount = syn.votants != null ? syn.votants : (pourCount + contreCount + abstCount);
+  const exprimesCount = syn.exprimes != null ? syn.exprimes : (pourCount + contreCount);
   const isMotionCensure = (scrutin.titre || '').toLowerCase().includes('censure') || (scrutin.sort || '').toLowerCase().includes('censure');
-  const majRequise = isMotionCensure ? 289 : (votantsCount > 0 ? (Math.floor(votantsCount / 2) + 1) : 0);
+  const majRequise = isMotionCensure ? 289 : (exprimesCount > 0 ? (Math.floor(exprimesCount / 2) + 1) : 0);
 
   let svgContent = `
     <svg viewBox="0 0 ${cfg.width} ${cfg.height}" class="hemicycle-svg" role="img" aria-label="Hémicycle parlementaire du scrutin ${scrutin.id}">
@@ -359,7 +360,7 @@ function renderScrutinHemicycle(scrutin, mode = currentHemiDisplayMode) {
 
           <!-- Données de participation & quorum -->
           <text x="0" y="27" fill="#334155" font-size="9.5" font-weight="600" text-anchor="middle">
-            ${votantsCount} votants / 577 • Maj. requise : ${majRequise}
+            ${exprimesCount} exprimés (${votantsCount} votants) • Maj. requise : ${majRequise}
           </text>
         </g>
 

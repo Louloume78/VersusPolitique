@@ -222,12 +222,49 @@ function switchAttendanceSubView(viewKey) {
     view.classList.toggle('active', view.id === `subview-${viewKey}`);
   });
 
+  // Synchronisation avec le routeur URL uniquement si on est bien sur l'onglet Assiduité
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress && (typeof currentActiveTab !== 'undefined' && currentActiveTab === 'tab-attendance')) {
+    DeepLinkRouter.setParams({ subview: viewKey === 'groups' ? null : viewKey });
+  }
+
   if (viewKey === 'groups') {
     renderGroupsBarometer();
   } else if (viewKey === 'deputes') {
     renderDeputoscope();
   } else if (viewKey === 'couteau') {
     renderCloseVotes();
+  }
+}
+
+/**
+ * Sélectionne un député par son identifiant officiel (ex: PA795778 ou ID numérique)
+ */
+function selectDeputyById(depId) {
+  if (!depId) return;
+  const doSelect = () => {
+    const deps = getAttendanceDeputes();
+    const cleanId = String(depId).trim().toLowerCase();
+    const found = deps.find(d => 
+      String(d.id).toLowerCase() === cleanId || 
+      String(d.id).replace(/^pa/i, '').toLowerCase() === cleanId ||
+      (d.nom && d.nom.toLowerCase().includes(cleanId))
+    );
+    if (found) {
+      selectDeputy(found, true);
+      const detailContainer = document.getElementById('deputyDetailContainer');
+      if (detailContainer) {
+        detailContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  };
+
+  if (!attendanceData && !attendanceLoading) {
+    loadAttendanceData(() => {
+      renderAttendanceViews();
+      doSelect();
+    });
+  } else if (attendanceData) {
+    doSelect();
   }
 }
 
@@ -818,16 +855,22 @@ function renderDeputyCards(list) {
 function onDeputyCardClick(depId) {
   const currentDeps = getAttendanceDeputes();
   const dep = currentDeps.find(d => d.id === depId) || (attendanceData.deputes && attendanceData.deputes.find(d => d.id === depId));
-  if (dep) selectDeputy(dep);
+  if (dep) selectDeputy(dep, true);
 }
 
-function selectDeputy(dep) {
+function selectDeputy(dep, isExplicitUserAction = false) {
   selectedDeputy = dep;
 
   // Mise à jour de la classe active sur les cartes
   document.querySelectorAll('.deputy-summary-card').forEach(card => {
     card.classList.toggle('selected', card.innerHTML.includes(dep.nom));
   });
+
+  // Synchronisation avec l'URL uniquement lors d'un clic explicite ou lien direct
+  if (isExplicitUserAction && typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress && (typeof currentActiveTab !== 'undefined' && currentActiveTab === 'tab-attendance')) {
+    DeepLinkRouter.setParams({ depute: dep.id });
+    DeepLinkRouter.syncMetaTags({ deputy: dep });
+  }
 
   // Affichage de la grande fiche profil
   renderDeputyDetailCard(dep);
@@ -910,6 +953,9 @@ function renderDeputyDetailCard(dep) {
       <div class="profile-actions">
         <button type="button" class="btn-share-deputy" onclick="shareDeputyAttendance('${dep.id}')">
           📸 Exporter la Fiche Citoyenne HD
+        </button>
+        <button type="button" class="btn-share-link" onclick="DeepLinkRouter.copyShareLink({ tab: 'attendance', subview: 'deputes', depute: '${dep.id}' }, 'Lien direct vers la fiche de ${dep.nom} copié !')" title="Copier le lien direct vers cette fiche député">
+          🔗 Copier le lien
         </button>
         <a href="https://www.assemblee-nationale.fr/dyn/deputes/${dep.id}" target="_blank" rel="noopener noreferrer" class="btn-an-link" title="Consulter la fiche officielle de ${dep.nom} sur assemblee-nationale.fr">
           🏛️ Fiche officielle Assemblée nationale ↗
@@ -1032,15 +1078,11 @@ function renderCloseVotes() {
             <div class="callout-groups-row">
               ${impactList}
             </div>
-            ${canFlipAlone ? `
-              <div class="callout-conclusion conclusion-sufficient">
-                ✅ <strong>Mobilisation décisive :</strong> Les absences cumulées dans ce camp (${totalCampAbsents} élu${totalCampAbsents > 1 ? 's' : ''}) dépassent l'écart du scrutin (${diffText}). Une présence complète de ces rangs aurait suffi à elle seule à inverser l'issue du vote.
-              </div>
-            ` : `
+            ${!canFlipAlone ? `
               <div class="callout-conclusion conclusion-insufficient">
                 ⚠️ <strong>Écart supérieur aux réserves :</strong> La somme des députés absents dans ces rangs (${totalCampAbsents} au total) reste inférieure aux ${diffText} requis. Même avec une présence à 100%, l'inversion du scrutin n'aurait pas pu se produire sans qu'un autre parti politique ne change d'avis.
               </div>
-            `}
+            ` : ''}
           </div>
         ` : ''}
       </div>
