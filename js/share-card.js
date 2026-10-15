@@ -1871,7 +1871,7 @@ function renderDeputyShareCardToCanvas(dep) {
   ctx.fillStyle = theme.footerBrand;
   ctx.font = '700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('VersusPolitique / Députoscope', W - 75, footerY + 18);
+  ctx.fillText('observatoire-votes.fr • Députoscope', W - 75, footerY + 18);
   ctx.textAlign = 'left';
 }
 
