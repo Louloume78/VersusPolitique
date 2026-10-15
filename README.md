@@ -10,7 +10,7 @@ Application web citoyenne et interactive d'analyse et de visualisation des scrut
 2. **Matrice globale (Heatmap)** : Vue d'ensemble triangulaire instantanée, optimisée pour tous les écrans (zéro défilement horizontal).
 3. **Face-à-face & Partage** : Duel analytique approfondi entre deux groupes (votes conjoints, rejets communs, divergences) avec génération de **fiches citoyennes HD téléchargeables et copiables**.
 4. **Explorateur de scrutins** : Moteur de recherche instantané parmi les 12 539 scrutins avec filtres par commission, mot-clé, date et position.
-5. **Démarrage instantané (< 100 ms)** : Architecture hybride exploitant `votes_majeurs.json` (499 textes majeurs, budgets, motions de censure) et pré-chargement transparent de la base complète.
+5. **Démarrage instantané (< 100 ms)** : Architecture optimisée exploitant `data_scrutins.json` (12 539 scrutins dont 499 textes majeurs, budgets, motions de censure) avec hydratation ultra-rapide en mémoire.
 
 ---
 
@@ -29,7 +29,7 @@ Application web citoyenne et interactive d'analyse et de visualisation des scrut
 │   ├── router.js                        # Gestion de l'historique et routage d'onglets
 │   └── app.js                           # Contrôleur applicatif central & navigation
 ├── deputes_assiduite.json               # Métriques d'assiduité et palmarès des députés
-└── votes_enriched_complete_final.json   # Base complète consolidée (12 539 scrutins)
+└── data_scrutins.json                   # Base complète consolidée (12 539 scrutins)
 ```
 
 ---

@@ -889,17 +889,7 @@ function setScrutinShareFormat(format) {
 }
 
 function updateScrutinShareFormatButtons() {
-  const btnHemi = document.getElementById('btnShareFormatHemi');
-  const btnList = document.getElementById('btnShareFormatList');
-  if (btnHemi && btnList) {
-    if (currentScrutinShareFormat === 'hemicycle') {
-      btnHemi.classList.add('active');
-      btnList.classList.remove('active');
-    } else {
-      btnList.classList.add('active');
-      btnHemi.classList.remove('active');
-    }
-  }
+  // Sélecteur de format déprécié (rendu unifié Hémicycle HD)
 }
 
 function renderScrutinHemicycleShareCardToCanvas(s) {
@@ -1337,11 +1327,6 @@ function openScrutinShareModal() {
   }
   document.getElementById('shareModalTitle').textContent = `Fiche : Scrutin n°${s.id}`;
 
-  const selector = document.getElementById('scrutinShareFormatSelector');
-  if (selector) {
-    selector.style.setProperty('display', 'none', 'important');
-  }
-
   // Rendu exclusif au format Hémicycle
   renderScrutinHemicycleShareCardToCanvas(s);
 
@@ -1366,8 +1351,6 @@ function openScrutinShareModal() {
 // Gestion de la modale de carte de synthèse partageable (Face-à-face)
 function openShareModal() {
   currentShareMode = 'comparison';
-  const selector = document.getElementById('scrutinShareFormatSelector');
-  if (selector) selector.style.setProperty('display', 'none', 'important');
 
   if (!currentComparisonData) {
     renderCharts();
@@ -1411,8 +1394,6 @@ function closeShareModal() {
   if (!scrutinModal || !scrutinModal.classList.contains('active')) {
     document.body.style.overflow = '';
   }
-  const selector = document.getElementById('scrutinShareFormatSelector');
-  if (selector) selector.style.setProperty('display', 'none', 'important');
   const toast = document.getElementById('shareStatusToast');
   if (toast) toast.style.display = 'none';
   const copyBtn = document.getElementById('copyCardTextBtn');
@@ -1596,7 +1577,7 @@ function copyShareCardText() {
     const dep = activeDeputyShare;
     const siteUrl = (typeof DeepLinkRouter !== 'undefined') ? DeepLinkRouter.buildShareUrl({ tab: 'attendance', subview: 'deputes', depute: dep.id }) : '';
     text = `⏱️ Fiche d'Assiduité Citoyenne : ${dep.civ} ${dep.nom} (${dep.groupe})\n` +
-           `📍 Circonscription : ${dep.circo || dep.departement || 'France'} • Législature(s) ${dep.legislatures.join(', ')}\n\n` +
+           `📍 Circonscription : ${dep.circo || dep.departement || 'France'} • Législature(s) ${(dep.legislatures || []).join(', ')}\n\n` +
            `• ⭐ Textes Majeurs : ${dep.taux_majeurs}% (${dep.majeurs_votes} / ${dep.majeurs_possibles} votés)\n` +
            `• 🌐 Présence Globale : ${dep.taux_global}% (${dep.votes} / ${dep.scrutins_possibles} votés)\n` +
            `• 📋 Recours Procuration : ${dep.taux_delegation}% des votes (${dep.delegation} par délégation)\n` +
@@ -1668,9 +1649,6 @@ let activeDeputyShare = null;
 function generateDeputyCardCanvas(dep) {
   currentShareMode = 'deputy';
   activeDeputyShare = dep;
-
-  const selector = document.getElementById('scrutinShareFormatSelector');
-  if (selector) selector.style.setProperty('display', 'none', 'important');
 
   const subtitleEl = document.getElementById('shareModalSubtitle');
   if (subtitleEl) subtitleEl.textContent = "Fiche citoyenne d'assiduité parlementaire";

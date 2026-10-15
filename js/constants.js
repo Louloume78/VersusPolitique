@@ -117,7 +117,8 @@ const GROUP_SEATS = {
   "Horizons": 34,
   "LIOT": 23,
   "Gauche Démocrate et Républicaine": 17,
-  "Union des Droites pour la République (UDR)": 16
+  "Union des Droites pour la République (UDR)": 16,
+  "Non Inscrits": 10
 };
 
 const GROUP_COLORS = {

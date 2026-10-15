@@ -120,6 +120,15 @@ function setAttendanceLegislature(leg) {
     btn.classList.toggle('active', btn.dataset.leg === leg);
   });
 
+  // Synchronisation avec le sélecteur global de législature
+  const globalPeriodSelect = document.getElementById('globalPeriodFilter');
+  if (globalPeriodSelect) {
+    const targetPeriod = leg === '17' ? 'LEG_17' : (leg === '16' ? 'LEG_16' : 'ALL');
+    if (globalPeriodSelect.value !== targetPeriod) {
+      globalPeriodSelect.value = targetPeriod;
+    }
+  }
+
   // Réinitialiser la liste des groupes dans le sélecteur du Députoscope
   const groupSelect = document.getElementById('deputoscopeGroupSelect');
   if (groupSelect) {
@@ -159,19 +168,33 @@ function initAttendanceTab() {
     btn.classList.toggle('active', btn.dataset.leg === currentAttendanceLeg);
   });
 
-  if (!attendanceData && !attendanceLoading) {
-    loadAttendanceData(() => {
-      renderAttendanceViews();
-    });
-  } else if (attendanceData) {
+  loadAttendanceData(() => {
     renderAttendanceViews();
-  }
+  });
 }
 
 /**
- * Charge le fichier deputes_assiduite.json
+ * File d'attente pour les callbacks de chargement asynchrone
+ */
+let attendanceLoadCallbacks = [];
+
+/**
+ * Charge le fichier deputes_assiduite.json de manière sécurisée et idempotente
  */
 function loadAttendanceData(callback) {
+  if (callback) attendanceLoadCallbacks.push(callback);
+
+  if (attendanceData) {
+    const cbs = [...attendanceLoadCallbacks];
+    attendanceLoadCallbacks = [];
+    cbs.forEach(cb => {
+      try { cb(); } catch (e) { console.error("Erreur callback assiduité :", e); }
+    });
+    return;
+  }
+
+  if (attendanceLoading) return;
+
   attendanceLoading = true;
   const loader = document.getElementById('attendanceLoadingState');
   const content = document.getElementById('attendanceContent');
@@ -191,11 +214,16 @@ function loadAttendanceData(callback) {
       attendanceLoading = false;
       if (loader) loader.style.display = 'none';
       if (content) content.style.display = 'block';
-      if (callback) callback();
+      const cbs = [...attendanceLoadCallbacks];
+      attendanceLoadCallbacks = [];
+      cbs.forEach(cb => {
+        try { cb(); } catch (e) { console.error("Erreur callback assiduité :", e); }
+      });
     })
     .catch(err => {
       console.error("Erreur de chargement d'assiduité :", err);
       attendanceLoading = false;
+      attendanceLoadCallbacks = [];
       if (loader) {
         loader.innerHTML = `
           <div class="error-banner" style="color: #ef4444; padding: 1.25rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">
@@ -258,13 +286,13 @@ function selectDeputyById(depId) {
     }
   };
 
-  if (!attendanceData && !attendanceLoading) {
+  if (attendanceData) {
+    doSelect();
+  } else {
     loadAttendanceData(() => {
       renderAttendanceViews();
       doSelect();
     });
-  } else if (attendanceData) {
-    doSelect();
   }
 }
 
@@ -315,6 +343,10 @@ function renderGroupsBarometer() {
   // Tracé du graphique Chart.js comparatif
   const ctx = document.getElementById('groupsAttendanceChart')?.getContext('2d');
   if (ctx) {
+    if (typeof Chart === 'undefined') {
+      console.warn("Chart.js n'est pas disponible.");
+      return;
+    }
     if (groupsChartInstance) groupsChartInstance.destroy();
 
     const labels = groups.map(g => g.groupe);
@@ -561,6 +593,11 @@ function renderQuadrantChart() {
     { pos: 0.75, label: `${Math.round(scaleY.inverse(0.75))}%` },
     { pos: 1.0, label: `${Math.round(scaleY.max)}% (Max)` }
   ];
+
+  if (typeof Chart === 'undefined') {
+    console.warn("Chart.js n'est pas disponible.");
+    return;
+  }
 
   quadrantChartInstance = new Chart(ctx, {
     type: 'scatter',
@@ -820,7 +857,7 @@ function renderDeputyCards(list) {
     const isSelected = selectedDeputy && selectedDeputy.id === dep.id;
 
     return `
-      <div class="deputy-summary-card ${isSelected ? 'selected' : ''}" onclick="onDeputyCardClick('${dep.id}')" style="--group-color: ${color};">
+      <div class="deputy-summary-card ${isSelected ? 'selected' : ''}" data-dep-id="${dep.id}" onclick="onDeputyCardClick('${dep.id}')" style="--group-color: ${color};">
         <div class="deputy-card-top">
           <div class="deputy-avatar-mini" style="background-color: ${color}20; border-color: ${color};">
             <span>👤</span>
@@ -863,7 +900,7 @@ function selectDeputy(dep, isExplicitUserAction = false) {
 
   // Mise à jour de la classe active sur les cartes
   document.querySelectorAll('.deputy-summary-card').forEach(card => {
-    card.classList.toggle('selected', card.innerHTML.includes(dep.nom));
+    card.classList.toggle('selected', card.dataset.depId === dep.id);
   });
 
   // Synchronisation avec l'URL uniquement lors d'un clic explicite ou lien direct
@@ -886,6 +923,7 @@ function renderDeputyDetailCard(dep) {
   // Extraire le numéro ID sans "PA" pour la photo officielle AN si disponible
   const idNum = dep.id.replace(/^PA/, '');
   const photoUrl = `https://www.assemblee-nationale.fr/dyn/assets/images/deputes/${idNum}.jpg`;
+  const safeNom = (dep.nom || '').replace(/'/g, "\\'");
 
   container.innerHTML = `
     <div class="deputy-profile-card">
@@ -954,7 +992,7 @@ function renderDeputyDetailCard(dep) {
         <button type="button" class="btn-share-deputy" onclick="shareDeputyAttendance('${dep.id}')">
           📸 Exporter la Fiche Citoyenne HD
         </button>
-        <button type="button" class="btn-share-link" onclick="DeepLinkRouter.copyShareLink({ tab: 'attendance', subview: 'deputes', depute: '${dep.id}' }, 'Lien direct vers la fiche de ${dep.nom} copié !')" title="Copier le lien direct vers cette fiche député">
+        <button type="button" class="btn-share-link" onclick="DeepLinkRouter.copyShareLink({ tab: 'attendance', subview: 'deputes', depute: '${dep.id}' }, 'Lien direct vers la fiche de ${safeNom} copié !')" title="Copier le lien direct vers cette fiche député">
           🔗 Copier le lien
         </button>
         <a href="https://www.assemblee-nationale.fr/dyn/deputes/${dep.id}" target="_blank" rel="noopener noreferrer" class="btn-an-link" title="Consulter la fiche officielle de ${dep.nom} sur assemblee-nationale.fr">

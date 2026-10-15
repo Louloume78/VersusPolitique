@@ -322,7 +322,7 @@ const DeepLinkRouter = {
         if (typeof deputoscopeFilters !== 'undefined') deputoscopeFilters.search = deputeSearch;
       }
       if (quadrant) {
-        const qSelect = document.getElementById('deputoscopeQuadrant');
+        const qSelect = document.getElementById('deputoscopeQuadrantSelect');
         if (qSelect) qSelect.value = quadrant;
         if (typeof deputoscopeFilters !== 'undefined') deputoscopeFilters.quadrant = quadrant;
       }
@@ -382,4 +382,5 @@ const DeepLinkRouter = {
 
 // Initialisation globale
 DeepLinkRouter.init();
+window.DeepLinkRouter = DeepLinkRouter;
 

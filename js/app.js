@@ -3,44 +3,6 @@
 // Cœur applicatif, gestion des données, filtres et vues UI
 // ==========================================================
 
-// Gestion du repli/dépli de l'ancienne bannière onboarding (si présente)
-function initOnboardingBanner() {
-  const content = document.getElementById('onboardingContent');
-  if (!content) return;
-  const isCollapsed = localStorage.getItem('obs_onboarding_collapsed') === 'true';
-  const btn = document.getElementById('onboardingToggleBtn');
-  const hint = document.getElementById('onboardingHeaderHint');
-  const miniBar = document.getElementById('onboardingCollapsedBar');
-
-  if (isCollapsed) {
-    content.style.display = 'none';
-    if (btn) btn.textContent = 'Déplier le guide ▼';
-    if (hint) hint.style.display = 'inline';
-    if (miniBar) miniBar.style.display = 'flex';
-  } else {
-    content.style.display = 'flex';
-    if (btn) btn.textContent = 'Réduire le guide ▲';
-    if (hint) hint.style.display = 'none';
-    if (miniBar) miniBar.style.display = 'none';
-  }
-}
-
-function toggleOnboarding() {
-  const content = document.getElementById('onboardingContent');
-  if (!content) return;
-  const btn = document.getElementById('onboardingToggleBtn');
-  const hint = document.getElementById('onboardingHeaderHint');
-  const miniBar = document.getElementById('onboardingCollapsedBar');
-
-  const willCollapse = (content.style.display !== 'none');
-  content.style.display = willCollapse ? 'none' : 'flex';
-  if (btn) btn.textContent = willCollapse ? 'Déplier le guide ▼' : 'Réduire le guide ▲';
-  if (hint) hint.style.display = willCollapse ? 'inline' : 'none';
-  if (miniBar) miniBar.style.display = willCollapse ? 'flex' : 'none';
-
-  localStorage.setItem('obs_onboarding_collapsed', willCollapse ? 'true' : 'false');
-}
-
 // Détection des textes majeurs (instantané via le flag 'majeur', ou fallback textuel)
 function isMajorScrutin(s) {
   if (s && s.majeur !== undefined) return s.majeur === 1;
@@ -73,6 +35,8 @@ function hideFullLoadingToast() {
   if (toast) toast.style.display = 'none';
 }
 
+let datasetLoadCallbacks = [];
+
 function loadFullDataset(onComplete) {
   if (fullDataset) {
     dataset = fullDataset;
@@ -80,22 +44,15 @@ function loadFullDataset(onComplete) {
     else refreshAllViews();
     return;
   }
-  if (isFullDatasetLoading) {
-    const checkInterval = setInterval(() => {
-      if (fullDataset) {
-        clearInterval(checkInterval);
-        dataset = fullDataset;
-        if (onComplete) onComplete();
-        else refreshAllViews();
-      }
-    }, 100);
-    return;
-  }
+
+  if (onComplete) datasetLoadCallbacks.push(onComplete);
+
+  if (isFullDatasetLoading) return;
 
   isFullDatasetLoading = true;
   showFullLoadingToast('⏳ Chargement de l\'ensemble des 12 539 scrutins...');
 
-  fetch('votes_enriched_complete_final.json')
+  fetch('data_scrutins.json')
     .then(res => res.json())
     .then(data => {
       for (let i = 0; i < data.length; i++) {
@@ -108,27 +65,29 @@ function loadFullDataset(onComplete) {
       isFullDatasetLoading = false;
       hideFullLoadingToast();
       updateCommissionSelectOptions();
-      if (onComplete) onComplete();
-      else refreshAllViews();
+      const cbs = [...datasetLoadCallbacks];
+      datasetLoadCallbacks = [];
+      if (cbs.length > 0) {
+        cbs.forEach(cb => { try { cb(); } catch (e) { console.error(e); } });
+      } else {
+        refreshAllViews();
+      }
     })
     .catch(err => {
       console.error("Erreur de chargement du dataset complet :", err);
       isFullDatasetLoading = false;
+      datasetLoadCallbacks = [];
       hideFullLoadingToast();
-      alert("Impossible de charger la base complète des scrutins. Vérifiez que le fichier est accessible.");
+      alert("Impossible de charger la base des scrutins (data_scrutins.json). Vérifiez que le fichier est accessible.");
     });
-}
-
-function prefetchFullDataset() {
-  if (fullDataset || isFullDatasetLoading) return;
-  loadFullDataset();
 }
 
 // Index universel composite : Map<"${legislature}_${id}", Scrutin> pour accès O(1) instantané
 const scrutinByKey = new Map();
 
 // Chargement initial unifié haute performance de la base consolidée (~6 Mo brut, ~600 Ko Gzip)
-fetch('votes_enriched_complete_final.json')
+isFullDatasetLoading = true;
+fetch('data_scrutins.json')
   .then(res => res.json())
   .then(data => {
     // Hydratation ultra-rapide des décomptes et positions en mémoire (~15 ms)
@@ -140,15 +99,18 @@ fetch('votes_enriched_complete_final.json')
     fullDataset = data;
     dataset = fullDataset;
     isFullDatasetLoading = false;
-    initOnboardingBanner();
     initSelectors();
     refreshAllViews();
+    const cbs = [...datasetLoadCallbacks];
+    datasetLoadCallbacks = [];
+    cbs.forEach(cb => { try { cb(); } catch (e) { console.error(e); } });
     if (typeof DeepLinkRouter !== 'undefined') {
       DeepLinkRouter.applyInitialRouting();
     }
   })
   .catch(err => {
-    console.error("Échec critique du chargement de votes_enriched_complete_final.json :", err);
+    isFullDatasetLoading = false;
+    console.error("Échec critique du chargement de data_scrutins.json :", err);
   });
 
 // ==========================================================
@@ -320,12 +282,18 @@ function openCoalitionsModal() {
   editingCoalitions = JSON.parse(JSON.stringify(activeCoalitionsConfig));
   renderCoalitionBuilder();
   const modal = document.getElementById('coalitionsModal');
-  if (modal) modal.style.display = 'flex';
+  if (modal) {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
 }
 
 function closeCoalitionsModal() {
   const modal = document.getElementById('coalitionsModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
   draggedGroupName = null;
 }
 
@@ -560,12 +528,6 @@ function swapDuelGroups() {
   }
 }
 
-function populateSelect(id, list) {
-  const el = document.getElementById(id);
-  el.innerHTML = '';
-  list.forEach(item => el.appendChild(new Option(item, item)));
-}
-
 // Met à jour les options du sélecteur de commission avec décompte dynamique
 function updateCommissionSelectOptions() {
   const commSelect = document.getElementById('ovCommission');
@@ -664,17 +626,11 @@ function refreshAllViews() {
 
   // Actualisation des compteurs d'accueil si présents
   const homeStatTotal = document.getElementById('homeStatTotal');
-  if (homeStatTotal) homeStatTotal.textContent = (fullDataset ? fullDataset.length : (dataset.length > 500 ? dataset.length : 12539)).toLocaleString('fr-FR');
+  if (homeStatTotal) homeStatTotal.textContent = (fullDataset ? fullDataset.length : 12539).toLocaleString('fr-FR');
   const homeStatMajors = document.getElementById('homeStatMajors');
-  if (homeStatMajors) homeStatMajors.textContent = "499";
-
-  const kpiEl = document.getElementById('global-kpi');
-  if (kpiEl) {
-    if (dataset.length <= 500 && globalMajorFilterOnly) {
-      kpiEl.textContent = `Mode Textes majeurs actif : ${baseFiltered.length.toLocaleString('fr-FR')} scrutins clés analysés (chargement rapide) — Cliquez sur « Tous les scrutins » pour analyser les 12 539 votes.`;
-    } else {
-      kpiEl.textContent = `Base consolidée : ${dataset.length.toLocaleString('fr-FR')} scrutins répertoriés — ${countText} analysé${baseFiltered.length > 1 ? 's' : ''}.`;
-    }
+  if (homeStatMajors) {
+    const majorCount = fullDataset ? fullDataset.filter(isMajorScrutin).length : 499;
+    homeStatMajors.textContent = majorCount.toLocaleString('fr-FR');
   }
 
   if (currentActiveTab === 'tab-overview') renderOverview();
@@ -765,13 +721,6 @@ function setHeatmapMetric(metric) {
   }
 }
 
-function quickSearchScrutin(keyword) {
-  const searchInput = document.getElementById('dtSearch');
-  if (searchInput) {
-    searchInput.value = (searchInput.value.trim().toLowerCase() === keyword.toLowerCase()) ? '' : keyword;
-    renderDetailed();
-  }
-}
 
 function toggleAdvancedFilters() {
   const container = document.getElementById('dtAdvancedFilters');
@@ -1437,11 +1386,37 @@ function closeModalOnBackdrop(event) {
   }
 }
 
-// Gestion de la modale Méthodologie & Définitions
+// Gestion de la modale Comprendre le projet & Définitions
+function openGuideModal() {
+  const m = document.getElementById('guideModal');
+  if (m) {
+    m.classList.add('active');
+    m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeGuideModal() {
+  const m = document.getElementById('guideModal');
+  if (m) {
+    m.classList.remove('active');
+    m.style.display = '';
+    document.body.style.overflow = '';
+  }
+}
+
+function closeGuideModalOnBackdrop(event) {
+  if (event && event.target && event.target.id === 'guideModal') {
+    closeGuideModal();
+  }
+}
+
+// Gestion de la modale Méthodologie & Rôle de l'IA
 function openMethodologyModal() {
   const m = document.getElementById('methodologyModal');
   if (m) {
     m.classList.add('active');
+    m.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   }
 }
@@ -1450,15 +1425,26 @@ function closeMethodologyModal() {
   const m = document.getElementById('methodologyModal');
   if (m) {
     m.classList.remove('active');
+    m.style.display = '';
     document.body.style.overflow = '';
   }
 }
 
 function closeMethodologyModalOnBackdrop(event) {
-  if (event.target.id === 'methodologyModal') {
+  if (event && event.target && event.target.id === 'methodologyModal') {
     closeMethodologyModal();
   }
 }
+
+// Rendre accessible globalement avec alias
+window.openGuideModal = openGuideModal;
+window.closeGuideModal = closeGuideModal;
+window.closeGuideModalOnBackdrop = closeGuideModalOnBackdrop;
+window.openDefinitionsModal = openGuideModal;
+window.closeDefinitionsModal = closeGuideModal;
+window.openMethodologyModal = openMethodologyModal;
+window.closeMethodologyModal = closeMethodologyModal;
+window.closeMethodologyModalOnBackdrop = closeMethodologyModalOnBackdrop;
 
 // Fermeture avec la touche Échap
 window.addEventListener('keydown', (e) => {
@@ -1471,9 +1457,17 @@ window.addEventListener('keydown', (e) => {
     if (shareModal && shareModal.classList.contains('active')) {
       closeShareModal();
     }
+    const guideM = document.getElementById('guideModal');
+    if (guideM && guideM.classList.contains('active')) {
+      closeGuideModal();
+    }
     const methModal = document.getElementById('methodologyModal');
     if (methModal && methModal.classList.contains('active')) {
       closeMethodologyModal();
+    }
+    const coalModal = document.getElementById('coalitionsModal');
+    if (coalModal && coalModal.classList.contains('active')) {
+      closeCoalitionsModal();
     }
   }
 });

@@ -91,30 +91,12 @@ function describeArcWedge(cx, cy, rIn, rOut, startAngle, endAngle) {
   ].join(' ');
 }
 
-/**
- * Mode d'affichage courant de l'hémicycle ('vote' ou 'partis')
- */
-let currentHemiDisplayMode = 'vote';
 let HEMICIRCLE_SECTOR_DATA = [];
-
-/**
- * Change le mode d'affichage et rafraîchit l'hémicycle.
- */
-function setHemicycleMode(mode) {
-  currentHemiDisplayMode = mode;
-  document.querySelectorAll('.hemi-toggle-btn').forEach(btn => btn.classList.remove('active'));
-  const btn = document.getElementById(mode === 'partis' ? 'hemiModePartis' : 'hemiModeVote');
-  if (btn) btn.classList.add('active');
-
-  if (activeModalScrutin) {
-    renderScrutinHemicycle(activeModalScrutin, mode);
-  }
-}
 
 /**
  * Rendu principal de l'hémicycle parlementaire SVG pour un scrutin donné.
  */
-function renderScrutinHemicycle(scrutin, mode = currentHemiDisplayMode) {
+function renderScrutinHemicycle(scrutin, mode = 'vote') {
   const container = document.getElementById('modalScrutinHemicycleContainer');
   if (!container || !scrutin) return;
 

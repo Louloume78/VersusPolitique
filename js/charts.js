@@ -122,11 +122,18 @@ function renderCharts() {
     if (sDiffDesc) sDiffDesc.textContent = `0 vote commun`;
   }
 
+  if (typeof Chart === 'undefined') {
+    console.warn("Chart.js n'est pas chargé. Graphiques désactivés.");
+    return;
+  }
+
   const radarLabels = Object.keys(commStats).filter(c => c !== "Autre");
   const radarData = radarLabels.map(c => ((commStats[c].pour / commStats[c].total) * 100).toFixed(1));
 
   if (radarInstance) radarInstance.destroy();
-  const ctxRadar = document.getElementById('radarChart').getContext('2d');
+  const radarCanvas = document.getElementById('radarChart');
+  if (!radarCanvas) return;
+  const ctxRadar = radarCanvas.getContext('2d');
   radarInstance = new Chart(ctxRadar, {
     type: 'radar',
     data: {
@@ -155,7 +162,9 @@ function renderCharts() {
   const timeData = sortedMonths.map(m => ((timeStats[m].matches / timeStats[m].total) * 100).toFixed(1));
 
   if (timelineInstance) timelineInstance.destroy();
-  const ctxTime = document.getElementById('timelineChart').getContext('2d');
+  const timeCanvas = document.getElementById('timelineChart');
+  if (!timeCanvas) return;
+  const ctxTime = timeCanvas.getContext('2d');
   timelineInstance = new Chart(ctxTime, {
     type: 'line',
     data: {
