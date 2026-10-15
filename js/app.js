@@ -1478,11 +1478,3 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-window.addEventListener('DOMContentLoaded', () => {
-  const current = (typeof getSiteTheme === 'function') ? getSiteTheme() : 'light';
-  const toggleBtn = document.getElementById('themeToggleBtn');
-  if (toggleBtn) {
-    toggleBtn.innerHTML = (current === 'dark') ? '☀️ Mode Clair' : '🌙 Mode Sombre';
-  }
-});
-

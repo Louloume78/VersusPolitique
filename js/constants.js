@@ -3,47 +3,30 @@
 // Référentiels, constantes politiques et état global
 // ==========================================
 
-// Paramètre général du thème du site ('dark' ou 'light')
-// Les cartes partageables suivent ce paramètre général du site.
-let SITE_THEME = (typeof localStorage !== 'undefined' && localStorage.getItem('site_theme')) || 'light';
+// Paramètre du thème du site (Thème clair par défaut)
+let SITE_THEME = 'light';
 
 function getSiteTheme() {
-  if (typeof document !== 'undefined' && document.documentElement) {
-    const dt = document.documentElement.getAttribute('data-theme');
-    if (dt === 'dark' || dt === 'light') return dt;
-  }
-  return SITE_THEME;
+  return 'light';
 }
 
 function setSiteTheme(theme) {
-  if (theme === 'dark' || theme === 'light') {
-    SITE_THEME = theme;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('site_theme', theme);
-    }
-    if (document.documentElement) {
-      document.documentElement.setAttribute('data-theme', theme);
-    }
-    // Mettre à jour l'étiquette du bouton toggle s'il existe
-    const toggleBtn = document.getElementById('themeToggleBtn');
-    if (toggleBtn) {
-      toggleBtn.innerHTML = (theme === 'dark') ? '☀️ Mode Clair' : '🌙 Mode Sombre';
-    }
-    // Re-rendre la carte citoyenne si la modale de partage est ouverte
-    if (typeof renderCurrentActiveShareCard === 'function') {
-      renderCurrentActiveShareCard();
-    }
+  SITE_THEME = 'light';
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('site_theme');
+  }
+  if (document.documentElement) {
+    document.documentElement.setAttribute('data-theme', 'light');
   }
 }
 
 function toggleSiteTheme() {
-  const current = getSiteTheme();
-  setSiteTheme(current === 'dark' ? 'light' : 'dark');
+  setSiteTheme('light');
 }
 
 // Initialisation au chargement du script
 if (typeof document !== 'undefined' && document.documentElement) {
-  document.documentElement.setAttribute('data-theme', SITE_THEME);
+  document.documentElement.setAttribute('data-theme', 'light');
 }
 
 const POLITICAL_SPECTRUM = [

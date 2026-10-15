@@ -29,8 +29,8 @@
   <meta name="twitter:image" content="https://louloume78.github.io/VersusPolitique/assets/og-preview.png">
   <meta name="twitter:image:alt" content="Aperçu des scrutins et alliances de l'Assemblée Nationale">
 
-  <!-- Favicon SVG dynamique -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/votes-logo.png">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css">
@@ -41,7 +41,7 @@
   <header class="site-header">
     <div class="header-inner">
       <div class="brand" onclick="switchTab('tab-home')" title="Retour à l'accueil citoyen">
-        <span class="brand-icon">🏛️</span>
+        <img class="brand-logo-img" src="assets/votes-logo.png" alt="Logo Observatoire des Votes" width="38" height="38">
         <div class="brand-text">
           <span class="brand-title">Observatoire des Votes</span>
           <span class="brand-subtitle">Assemblée nationale • 16ᵉ & 17ᵉ Législatures</span>
@@ -87,7 +87,7 @@
     <div class="home-hero-container">
       <!-- Badge Citoyen -->
       <div class="home-hero-badge">
-        <span>🏛️</span> Observatoire Citoyen Indépendant
+        <img class="hero-badge-logo-img" src="assets/votes-logo.png" alt="Logo Observatoire des Votes" width="18" height="18"> Observatoire Citoyen Indépendant
       </div>
 
       <!-- Titre Aéré & Accueillant -->
@@ -918,16 +918,6 @@
             <h4 class="hemicycle-title">Hémicycle Parlementaire (577 sièges)</h4>
             <span class="hemicycle-subtitle">Projection spatiale des votes et taux de présence par groupe</span>
           </div>
-          <div class="hemicycle-controls">
-            <div class="hemicycle-toggle-group" role="group" aria-label="Mode d'affichage de l'hémicycle">
-              <button type="button" class="hemi-toggle-btn active" id="hemiModeVote" onclick="setHemicycleMode('vote')">
-                🗳️ Votes
-              </button>
-              <button type="button" class="hemi-toggle-btn" id="hemiModePartis" onclick="setHemicycleMode('partis')">
-                🏛️ Partis
-              </button>
-            </div>
-          </div>
         </div>
 
         <div class="hemicycle-canvas-wrap" id="modalScrutinHemicycleContainer">
@@ -1127,6 +1117,7 @@
   <div class="footer-inner">
     <div class="footer-brand">
       <div class="footer-title">
+        <img class="footer-logo-img" src="assets/votes-logo.png" alt="Logo Observatoire des Votes" width="22" height="22">
         <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-right: 0.35rem;">AN</span> Observatoire des Votes Parlementaires
       </div>
       <p class="footer-desc">
@@ -1135,9 +1126,6 @@
     </div>
 
     <div class="footer-links">
-      <button type="button" class="footer-btn-link theme-toggle-footer-btn" id="themeToggleBtn" onclick="toggleSiteTheme()" title="Basculer entre le mode clair et le mode sombre">
-        🌓 Mode Thème
-      </button>
       <button type="button" class="footer-btn-link" onclick="openMethodologyModal()">
         📖 Méthodologie &amp; Définitions
       </button>
