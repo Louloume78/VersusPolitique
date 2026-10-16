@@ -37,8 +37,28 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css">
 
-  <!-- Mesure d'audience (Umami Analytics) -->
-  <script defer src="https://vercel-umami-six.vercel.app/script.js" data-website-id="45a6dba8-cdee-4930-8f30-744393ddaf6c"></script>
+  <!-- Mesure d'audience (Umami Analytics) - Désactivé en environnement local -->
+  <script>
+    (function() {
+      var hostname = window.location.hostname;
+      var isLocal = window.location.protocol === 'file:' ||
+                    hostname === 'localhost' ||
+                    hostname === '127.0.0.1' ||
+                    hostname === '0.0.0.0' ||
+                    hostname === '::1' ||
+                    hostname.endsWith('.local') ||
+                    hostname.startsWith('192.168.') ||
+                    hostname.startsWith('10.');
+      if (!isLocal) {
+        var script = document.createElement('script');
+        script.defer = true;
+        script.src = 'https://vercel-umami-six.vercel.app/script.js';
+        script.setAttribute('data-website-id', '45a6dba8-cdee-4930-8f30-744393ddaf6c');
+        script.setAttribute('data-domains', 'observatoire-votes.fr,www.observatoire-votes.fr');
+        document.head.appendChild(script);
+      }
+    })();
+  </script>
 </head>
 <body>
 
