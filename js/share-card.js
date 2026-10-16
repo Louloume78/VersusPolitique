@@ -65,14 +65,14 @@ function drawSplitProgressBar(ctx, x, y, w, h, r, pourPct, contrePct, diffPct) {
   ctx.restore();
 }
 
-function drawLegendItem(ctx, x, y, color, label) {
+function drawLegendItem(ctx, x, y, color, label, textColor = null) {
   ctx.beginPath();
   ctx.arc(x, y - 6, 7, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
 
   ctx.font = '600 19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = '#cbd5e1';
+  ctx.fillStyle = textColor || '#334155';
   ctx.fillText(label, x + 16, y);
 }
 
@@ -548,22 +548,22 @@ function renderShareCardToCanvas(d, periodLabel, modeText) {
   wrapText(ctx, narrativeText, 116, narrY + 82, 848, 30);
 
   // 9. Pied de page & Sceau de confiance
-  const footY = H - 56;
+  const footY = H - 80;
   ctx.beginPath();
-  ctx.moveTo(80, footY - 14);
-  ctx.lineTo(W - 80, footY - 14);
+  ctx.moveTo(80, footY - 12);
+  ctx.lineTo(W - 80, footY - 12);
   ctx.strokeStyle = theme.footerLine;
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  ctx.font = '500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '500 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.footerText;
-  ctx.fillText("🏛️ Données vérifiées • Open Data officiel de l'Assemblée nationale", 84, footY + 12);
+  ctx.fillText("🏛️ Données officielles • Open Data Assemblée nationale", 84, footY + 14);
 
-  ctx.font = '700 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '700 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.footerBrand;
   ctx.textAlign = 'right';
-  ctx.fillText("Observatoire citoyen", W - 84, footY + 12);
+  ctx.fillText("observatoire-votes.fr", W - 84, footY + 14);
   ctx.textAlign = 'left';
 }
 
@@ -851,22 +851,22 @@ function renderScrutinShareCardToCanvas(s) {
   ctx.textAlign = 'left';
 
   // 10. Pied de page sécurisé
-  const footY = H - 56;
+  const footY = H - 80;
   ctx.beginPath();
-  ctx.moveTo(84, footY - 14);
-  ctx.lineTo(W - 84, footY - 14);
+  ctx.moveTo(84, footY - 12);
+  ctx.lineTo(W - 84, footY - 12);
   ctx.strokeStyle = theme.footerLine;
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  ctx.font = '500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '500 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.footerText;
-  ctx.fillText("🏛️ Données officielles Open Data de l'Assemblée nationale", 84, footY + 12);
+  ctx.fillText("🏛️ Données officielles • Open Data Assemblée nationale", 84, footY + 14);
 
-  ctx.font = '700 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '700 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.footerBrand;
   ctx.textAlign = 'right';
-  ctx.fillText("Observatoire des Votes Parlementaires", W - 84, footY + 12);
+  ctx.fillText("observatoire-votes.fr", W - 84, footY + 14);
   ctx.textAlign = 'left';
 }
 
@@ -889,7 +889,7 @@ function setScrutinShareFormat(format) {
 }
 
 function updateScrutinShareFormatButtons() {
-  // Sélecteur de format déprécié (rendu unifié Hémicycle HD)
+  // Sélecteur de format déprécié (rendu unifié Hémicycle)
 }
 
 function renderScrutinHemicycleShareCardToCanvas(s) {
@@ -991,11 +991,11 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
   const commStr = s.commission ? ` • 🏛️ ${s.commission}` : ' • 🏛️ Séance publique';
   ctx.fillText(`${dateStr}${commStr}`, 84, metaY);
 
-  // 7. Bannière officielle avec décompte global intégré
+  // 7. Bannière officielle d'issue finale (Sleek & bold, sans doublons)
   const bannerY = metaY + 14;
-  const bannerH = 74;
+  const bannerH = 50;
   const bannerW = 912;
-  drawRoundRect(ctx, 84, bannerY, bannerW, bannerH, 16);
+  drawRoundRect(ctx, 84, bannerY, bannerW, bannerH, 14);
 
   const syn = s.synthese || {};
   let totalP = 0, totalC = 0, totalA = 0;
@@ -1012,45 +1012,35 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
   const majRequise = isMotionCensure ? 289 : (exprimesCount > 0 ? (Math.floor(exprimesCount / 2) + 1) : 0);
 
   if (isAdopte) {
-    ctx.fillStyle = theme.isDark ? 'rgba(16, 185, 129, 0.14)' : 'rgba(16, 185, 129, 0.12)';
+    ctx.fillStyle = theme.isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.12)';
     ctx.fill();
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.8;
     ctx.strokeStyle = '#10b981';
     ctx.stroke();
 
     ctx.font = '800 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = theme.isDark ? '#34d399' : '#059669';
     ctx.textAlign = 'center';
-    ctx.fillText('✓  TEXTE ADOPTÉ PAR L\'ASSEMBLÉE NATIONALE', W / 2, bannerY + 33);
+    ctx.fillText('✓  TEXTE ADOPTÉ PAR L\'ASSEMBLÉE NATIONALE', W / 2, bannerY + 32);
   } else {
-    ctx.fillStyle = theme.isDark ? 'rgba(239, 68, 68, 0.14)' : 'rgba(239, 68, 68, 0.10)';
+    ctx.fillStyle = theme.isDark ? 'rgba(239, 68, 68, 0.16)' : 'rgba(239, 68, 68, 0.10)';
     ctx.fill();
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.8;
     ctx.strokeStyle = '#ef4444';
     ctx.stroke();
 
     ctx.font = '800 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = theme.isDark ? '#f87171' : '#dc2626';
     ctx.textAlign = 'center';
-    ctx.fillText('✕  TEXTE REJETÉ PAR L\'ASSEMBLÉE NATIONALE', W / 2, bannerY + 33);
+    ctx.fillText('✕  TEXTE REJETÉ PAR L\'ASSEMBLÉE NATIONALE', W / 2, bannerY + 32);
   }
-
-  // Sous-ligne chiffrée dans la bannière
-  ctx.font = '600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = theme.isDark ? '#e2e8f0' : '#1e293b';
-  ctx.textAlign = 'center';
-  ctx.fillText(
-    `🟢 ${pourCount} Pour   •   🔵 ${contreCount} Contre   •   🟠 ${abstCount} Abstention   •   👥 ${votantsCount} Votants / 577`,
-    W / 2,
-    bannerY + 59
-  );
   ctx.textAlign = 'left';
 
   // 8. Hémicycle Parlementaire Vectoriel 2D
   const cx = 540;
-  const cy = 600;
-  const rIn = 125;
-  const rOut = 245;
+  const cy = 606;
+  const rIn = 130;
+  const rOut = 248;
   const deltaR = rOut - rIn;
   const coverageDeg = 216;
   const startDeg = 198;
@@ -1174,45 +1164,48 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
     ctx.fillText(shortName, lx, ly + 5);
   });
 
-  // 9. Perchoir central sur l'hémicycle (Positionné nettement au-dessus du centre)
-  drawRoundRect(ctx, cx - 80, cy - 90, 160, 36, 18);
-  ctx.fillStyle = isAdopte ? (theme.isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.15)') : (theme.isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.15)');
-  ctx.fill();
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = outcomeColor;
-  ctx.stroke();
+  // 9. Perchoir & Décompte officiel au centre de l'hémicycle (sans doublons ni chevauchement)
+  const boxW = 248;
+  const boxH = 88;
+  const boxX = cx - (boxW / 2);
+  const boxY = cy - 86;
 
-  ctx.font = '800 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = isAdopte ? (theme.isDark ? '#34d399' : '#059669') : (theme.isDark ? '#f87171' : '#dc2626');
-  ctx.textAlign = 'center';
-  ctx.fillText(outcomeLabel, cx, cy - 66);
-
-  // Pilule des voix
-  drawRoundRect(ctx, cx - 110, cy - 42, 220, 26, 6);
-  ctx.fillStyle = theme.isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)';
+  drawRoundRect(ctx, boxX, boxY, boxW, boxH, 14);
+  ctx.fillStyle = theme.isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.88)';
   ctx.fill();
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.2;
   ctx.strokeStyle = theme.boxBorder;
   ctx.stroke();
 
-  ctx.font = '700 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  // Titre du perchoir
+  ctx.font = '700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.textMuted;
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#10b981';
-  ctx.fillText(`● ${pourCount}`, cx - 60, cy - 25);
-  ctx.fillStyle = '#0e7490';
-  ctx.fillText(`● ${contreCount}`, cx, cy - 25);
-  ctx.fillStyle = '#f59e0b';
-  ctx.fillText(`● ${abstCount}`, cx + 60, cy - 25);
+  ctx.fillText('DÉCOMPTE DES VOIX', cx, boxY + 22);
 
-  // Ligne majorité requise sous le perchoir
+  // Compteurs des voix avec puces de couleur
+  ctx.font = '800 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = '#10b981';
+  ctx.fillText(`● ${pourCount} Pour`, cx - 74, boxY + 48);
+  ctx.fillStyle = '#0e7490';
+  ctx.fillText(`● ${contreCount} Contre`, cx + 2, boxY + 48);
+  ctx.fillStyle = '#f59e0b';
+  ctx.fillText(`● ${abstCount} Abst.`, cx + 76, boxY + 48);
+
+  // Ligne majorité requise sous le décompte
+  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = theme.textSecondary;
+  ctx.fillText(`${exprimesCount} exprimés • Maj. requise : ${majRequise}`, cx, boxY + 72);
+
+  // Votants globaux sous le cockpit
   ctx.font = '600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.textMuted;
-  ctx.fillText(`${exprimesCount} exprimés • Maj. requise : ${majRequise}`, cx, cy + 2);
+  ctx.fillText(`👥 ${votantsCount} députés votants / 577`, cx, cy + 18);
   ctx.textAlign = 'left';
 
   // 10. Légende sous l'hémicycle
-  const legendBoxY = 744;
-  drawRoundRect(ctx, 84, legendBoxY, 912, 40, 10);
+  const legendBoxY = 650;
+  drawRoundRect(ctx, 84, legendBoxY, 912, 38, 10);
   ctx.fillStyle = theme.boxBg;
   ctx.fill();
   ctx.lineWidth = 1;
@@ -1223,18 +1216,18 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
   ctx.fillStyle = theme.textSecondary;
   ctx.textAlign = 'center';
   ctx.fillText(
-    `🟢 Pour   •   🔵 Contre   •   🟠 Abstention   •   ⚪ Frange supérieure : Députés absents (hauteur = présence)`,
+    `🟢 Pour   •   🔵 Contre   •   🟠 Abstention   •   ⚪ Frange : Absents (hauteur = présence)`,
     W / 2,
-    legendBoxY + 25
+    legendBoxY + 24
   );
   ctx.textAlign = 'left';
 
   // 11. Grille compacte des groupes (2 colonnes de 6 groupes)
   const compactGridY = legendBoxY + 54;
   const colW = 444;
-  const itemH = 54;
+  const itemH = 68;
   const colGap = 24;
-  const rowGap = 9;
+  const rowGap = 11;
 
   hemiGroupSectors.slice(0, 12).forEach((sec, idx) => {
     const col = idx < 6 ? 0 : 1;
@@ -1242,7 +1235,7 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
     const itemX = (col === 0) ? 84 : (84 + colW + colGap);
     const itemY = compactGridY + row * (itemH + rowGap);
 
-    drawRoundRect(ctx, itemX, itemY, colW, itemH, 10);
+    drawRoundRect(ctx, itemX, itemY, colW, itemH, 12);
     ctx.fillStyle = theme.boxBg;
     ctx.fill();
     ctx.lineWidth = 1;
@@ -1262,51 +1255,51 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
     }
 
     ctx.beginPath();
-    ctx.arc(itemX + 18, itemY + 18, 6, 0, Math.PI * 2);
+    ctx.arc(itemX + 20, itemY + 24, 6.5, 0, Math.PI * 2);
     ctx.fillStyle = dotColor;
     ctx.fill();
 
     // Nom court & long
-    ctx.font = '700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.font = '700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = theme.titleColor;
     let labelGroup = sec.shortName;
     if (sec.groupName.length <= 24) labelGroup += ` (${sec.groupName})`;
-    ctx.fillText(labelGroup, itemX + 32, itemY + 23);
+    ctx.fillText(labelGroup, itemX + 36, itemY + 29);
 
     // Vote en gros badge à droite
-    ctx.font = '800 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.font = '800 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = voteTextColor;
     ctx.textAlign = 'right';
-    ctx.fillText(voteBadgeText, itemX + colW - 14, itemY + 23);
+    ctx.fillText(voteBadgeText, itemX + colW - 16, itemY + 29);
 
     // 2ème ligne : Décompte des voix et présence
-    ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = theme.textMuted;
     ctx.textAlign = 'left';
-    ctx.fillText(`Voix : ${sec.p}P · ${sec.c}C · ${sec.a}A`, itemX + 32, itemY + 42);
+    ctx.fillText(`Voix : ${sec.p}P · ${sec.c}C · ${sec.a}A`, itemX + 36, itemY + 52);
 
     ctx.textAlign = 'right';
-    ctx.fillText(`${sec.presents}/${sec.seats} présents (${sec.presencePct}%)`, itemX + colW - 14, itemY + 42);
+    ctx.fillText(`${sec.presents}/${sec.seats} présents (${sec.presencePct}%)`, itemX + colW - 16, itemY + 52);
     ctx.textAlign = 'left';
   });
 
   // 12. Pied de page sécurisé
-  const footY = H - 56;
+  const footY = H - 80;
   ctx.beginPath();
-  ctx.moveTo(84, footY - 14);
-  ctx.lineTo(W - 84, footY - 14);
+  ctx.moveTo(84, footY - 12);
+  ctx.lineTo(W - 84, footY - 12);
   ctx.strokeStyle = theme.footerLine;
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  ctx.font = '500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '500 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.footerText;
-  ctx.fillText("🏛️ Données officielles Open Data de l'Assemblée nationale", 84, footY + 12);
+  ctx.fillText("🏛️ Données officielles • Open Data Assemblée nationale", 84, footY + 14);
 
-  ctx.font = '700 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '700 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.footerBrand;
   ctx.textAlign = 'right';
-  ctx.fillText("Observatoire des Votes Parlementaires", W - 84, footY + 12);
+  ctx.fillText("observatoire-votes.fr", W - 84, footY + 14);
   ctx.textAlign = 'left';
 }
 
@@ -1736,7 +1729,11 @@ function renderDeputyShareCardToCanvas(dep) {
   // Badge du groupe
   const groupY = nameY + 16;
   ctx.font = '700 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  const groupW = ctx.measureText(dep.groupe).width + 36;
+  const groupTextW = ctx.measureText(dep.groupe).width;
+  const dotCenterX = 92;
+  const textStartX = 107;
+  const rightPad = 18;
+  const groupW = (textStartX - 75) + groupTextW + rightPad;
   drawRoundRect(ctx, 75, groupY, groupW, 36, 10);
   ctx.fillStyle = groupColor + (theme.isDark ? '28' : '18');
   ctx.fill();
@@ -1746,12 +1743,12 @@ function renderDeputyShareCardToCanvas(dep) {
 
   // Puce de couleur
   ctx.beginPath();
-  ctx.arc(94, groupY + 18, 6, 0, Math.PI * 2);
+  ctx.arc(dotCenterX, groupY + 18, 5.5, 0, Math.PI * 2);
   ctx.fillStyle = groupColor;
   ctx.fill();
 
   ctx.fillStyle = theme.isDark ? '#ffffff' : '#0f172a';
-  ctx.fillText(dep.groupe, 110, groupY + 24);
+  ctx.fillText(dep.groupe, textStartX, groupY + 24);
 
   // Circonscription
   ctx.fillStyle = theme.textMuted;
@@ -1855,23 +1852,22 @@ function renderDeputyShareCardToCanvas(dep) {
   ctx.fillText("délégations parlementaires, missions d'information et travail en circonscription motivent des absences légitimes.", 98, disclY + 64);
 
   // 10. Pied de page sécurisé
-  const footerY = H - 56;
+  const footerY = H - 76;
   ctx.beginPath();
-  ctx.moveTo(75, footerY - 14);
-  ctx.lineTo(W - 75, footerY - 14);
+  ctx.moveTo(75, footerY - 12);
+  ctx.lineTo(W - 75, footerY - 12);
   ctx.strokeStyle = theme.footerLine;
   ctx.lineWidth = 1;
   ctx.stroke();
 
   ctx.fillStyle = theme.footerText;
-  ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('Source : Open Data officiel de l\'Assemblée nationale • Données publiques certifiées', 75, footerY + 8);
-  ctx.fillText('Observatoire citoyen indépendant • Réalisé à partir des décomptes nominatifs officiels', 75, footerY + 27);
+  ctx.font = '500 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText("🏛️ Données officielles • Open Data Assemblée nationale", 75, footerY + 16);
 
   ctx.fillStyle = theme.footerBrand;
-  ctx.font = '700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '700 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('observatoire-votes.fr • Députoscope', W - 75, footerY + 18);
+  ctx.fillText("observatoire-votes.fr", W - 75, footerY + 16);
   ctx.textAlign = 'left';
 }
 

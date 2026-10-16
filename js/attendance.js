@@ -913,6 +913,21 @@ function selectDeputy(dep, isExplicitUserAction = false) {
   renderDeputyDetailCard(dep);
 }
 
+/**
+ * Gestion du repli d'image pour la photo officielle du député
+ */
+function handleDeputyPhotoError(img, fallbackUrl) {
+  if (fallbackUrl && fallbackUrl !== img.src && !img.dataset.triedFallback) {
+    img.dataset.triedFallback = 'true';
+    img.src = fallbackUrl;
+  } else {
+    img.onerror = null;
+    if (img.parentElement) {
+      img.parentElement.innerHTML = '<div class="profile-fallback-avatar">👤</div>';
+    }
+  }
+}
+
 function renderDeputyDetailCard(dep) {
   const container = document.getElementById('deputyDetailContainer');
   if (!container) return;
@@ -920,21 +935,25 @@ function renderDeputyDetailCard(dep) {
   const color = (typeof getGroupColor === 'function') ? getGroupColor(dep.groupe) : '#94a3b8';
   const qInfo = QUADRANT_CONFIG[dep.quadrant] || { label: dep.quadrant, badgeClass: '', desc: '' };
   
-  // Extraire le numéro ID sans "PA" pour la photo officielle AN si disponible
-  const idNum = dep.id.replace(/^PA/, '');
-  const photoUrl = `https://www.assemblee-nationale.fr/dyn/assets/images/deputes/${idNum}.jpg`;
+  // Extraire le numéro ID sans "PA" pour la photo officielle AN (17e ou 16e législature)
+  const idNum = (dep.id || '').replace(/^PA/, '');
+  const legs = Array.isArray(dep.legislatures) ? dep.legislatures : [];
+  const prefer16 = legs.includes('16') && !legs.includes('17');
+  const primaryLeg = prefer16 ? '16' : '17';
+  const fallbackLeg = prefer16 ? '17' : '16';
+  const photoUrl = `https://www.assemblee-nationale.fr/dyn/static/tribun/${primaryLeg}/photos/carre/${idNum}.jpg`;
+  const fallbackPhotoUrl = `https://www.assemblee-nationale.fr/dyn/static/tribun/${fallbackLeg}/photos/carre/${idNum}.jpg`;
   const safeNom = (dep.nom || '').replace(/'/g, "\\'");
+  const safeNomAttr = (dep.nom || '').replace(/"/g, '&quot;');
 
   container.innerHTML = `
     <div class="deputy-profile-card">
       <div class="profile-header" style="border-top: 4px solid ${color};">
         <div class="profile-avatar-wrap">
-          <img src="${photoUrl}" alt="${dep.nom}" class="profile-photo" onerror="this.onerror=null; this.src=''; this.parentElement.innerHTML='<div class=\\'profile-fallback-avatar\\'>👤</div>';">
+          <img src="${photoUrl}" alt="${safeNomAttr}" class="profile-photo" onerror="handleDeputyPhotoError(this, '${fallbackPhotoUrl}')">
         </div>
         <div class="profile-identity">
-          <span class="profile-group-tag" style="background-color: ${color}22; color: ${color}; border: 1px solid ${color}44;">
-            ${dep.groupe}
-          </span>
+          <span class="profile-group-tag" style="background-color: ${color}22; color: ${color}; border: 1px solid ${color}44;">${dep.groupe}</span>
           <h2 class="profile-name">${dep.civ} ${dep.nom}</h2>
           <p class="profile-mandat">
             📍 ${dep.circo || dep.departement || 'Circonscription nationale'} • Législature(s) ${(dep.legislatures || []).join(', ')}
@@ -987,10 +1006,10 @@ function renderDeputyDetailCard(dep) {
         </div>
       </div>
 
-      <!-- Boutons d'actions Fiche Citoyenne HD & Lien AN -->
+      <!-- Boutons d'actions Fiche Citoyenne & Lien AN -->
       <div class="profile-actions">
         <button type="button" class="btn-share-deputy" onclick="shareDeputyAttendance('${dep.id}')">
-          📸 Exporter la Fiche Citoyenne HD
+          <span>📸</span> Partager l'infographie
         </button>
         <button type="button" class="btn-share-link" onclick="DeepLinkRouter.copyShareLink({ tab: 'attendance', subview: 'deputes', depute: '${dep.id}' }, 'Lien direct vers la fiche de ${safeNom} copié !')" title="Copier le lien direct vers cette fiche député">
           🔗 Copier le lien
@@ -1149,7 +1168,7 @@ function openScrutinDetail(scrutinId, leg) {
 }
 
 /**
- * Génère la carte de partage HD pour un député
+ * Génère la carte de partage pour un député
  */
 function shareDeputyAttendance(depId) {
   if (!attendanceData) return;
