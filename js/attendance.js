@@ -733,7 +733,7 @@ function renderQuadrantChart() {
 
               const lines = [
                 `Circonscription : ${dep.circo || dep.departement || 'Non renseignée'}`,
-                `⭐ Textes Majeurs : ${dep.taux_majeurs}% (${dep.majeurs_votes} / ${dep.majeurs_possibles})`,
+                `⭐ Textes Majeurs : ${dep.taux_majeurs}% (${dep.majeurs_votes ?? dep.majeurs ?? 0} / ${dep.majeurs_possibles})`,
                 `🌐 Présence Globale : ${dep.taux_global}% (${dep.votes} / ${dep.scrutins_possibles})`,
                 `📋 Procuration : ${dep.taux_delegation}% des votes`,
                 `Catégorie : ${QUADRANT_CONFIG[dep.quadrant]?.label || dep.quadrant}`
@@ -956,7 +956,7 @@ function renderDeputyDetailCard(dep) {
             <span class="stat-title">Textes Majeurs</span>
           </div>
           <div class="stat-number">${dep.taux_majeurs}%</div>
-          <div class="stat-detail">${dep.majeurs_votes} votés sur ${dep.majeurs_possibles} scrutins clés</div>
+          <div class="stat-detail">${dep.majeurs_votes ?? dep.majeurs ?? 0} votés sur ${dep.majeurs_possibles} scrutins clés</div>
           <div class="stat-progress">
             <div class="stat-fill" style="width: ${dep.taux_majeurs}%; background-color: #3b82f6;"></div>
           </div>

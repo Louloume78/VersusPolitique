@@ -342,7 +342,7 @@ function renderScrutinHemicycle(scrutin, mode = 'vote') {
 
           <!-- Données de participation & quorum -->
           <text x="0" y="27" fill="#334155" font-size="9.5" font-weight="600" text-anchor="middle">
-            ${exprimesCount} exprimés (${votantsCount} votants) • Maj. requise : ${majRequise}
+            ${exprimesCount} exprimés • Maj. requise : ${majRequise}
           </text>
         </g>
 
@@ -423,7 +423,7 @@ function onHemicycleHover(groupName) {
         voteEl.textContent = 'Position majoritaire : CONTRE';
         voteEl.setAttribute('fill', '#0e7490');
       } else if (sec.pos === 'ABSTENTION') {
-        voteEl.textContent = 'Position majoritaire : ABSTENTION';
+        voteEl.textContent = 'Position maj. : ABSTENTION';
         voteEl.setAttribute('fill', '#f59e0b');
       } else {
         voteEl.textContent = 'Non-participant (<3 votants)';

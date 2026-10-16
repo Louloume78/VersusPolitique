@@ -1578,7 +1578,7 @@ function copyShareCardText() {
     const siteUrl = (typeof DeepLinkRouter !== 'undefined') ? DeepLinkRouter.buildShareUrl({ tab: 'attendance', subview: 'deputes', depute: dep.id }) : '';
     text = `⏱️ Fiche d'Assiduité Citoyenne : ${dep.civ} ${dep.nom} (${dep.groupe})\n` +
            `📍 Circonscription : ${dep.circo || dep.departement || 'France'} • Législature(s) ${(dep.legislatures || []).join(', ')}\n\n` +
-           `• ⭐ Textes Majeurs : ${dep.taux_majeurs}% (${dep.majeurs_votes} / ${dep.majeurs_possibles} votés)\n` +
+           `• ⭐ Textes Majeurs : ${dep.taux_majeurs}% (${dep.majeurs_votes ?? dep.majeurs ?? 0} / ${dep.majeurs_possibles} votés)\n` +
            `• 🌐 Présence Globale : ${dep.taux_global}% (${dep.votes} / ${dep.scrutins_possibles} votés)\n` +
            `• 📋 Recours Procuration : ${dep.taux_delegation}% des votes (${dep.delegation} par délégation)\n` +
            `• Profil parlementaire : ${dep.quadrant}\n\n` +
@@ -1795,7 +1795,7 @@ function renderDeputyShareCardToCanvas(dep) {
     title: 'PARTICIPATION SUR TEXTES MAJEURS',
     subtitle: 'Budgets, motions de censure, réformes institutionnelles et lois emblématiques',
     pct: dep.taux_majeurs,
-    countText: `${dep.majeurs_votes} votés sur ${dep.majeurs_possibles} scrutins clés`,
+    countText: `${dep.majeurs_votes ?? dep.majeurs ?? 0} votés sur ${dep.majeurs_possibles} scrutins clés`,
     barColor: '#3b82f6'
   }, theme);
 
