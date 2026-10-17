@@ -74,7 +74,7 @@
       </div>
 
       <nav class="tabs-nav">
-        <button class="tab-btn active" onclick="switchTab('tab-home')">🏠 Accueil</button>
+        <button class="tab-btn active" onclick="switchTab('tab-home')">🏛️ Accueil</button>
         <button class="tab-btn" onclick="switchTab('tab-overview')">📊 Alliances</button>
         <button class="tab-btn" onclick="switchTab('tab-heatmap')">🗺️ Matrice Globale</button>
         <button class="tab-btn" onclick="switchTab('tab-radar-time')">⚔️ Face-à-face</button>
@@ -453,10 +453,13 @@
         <div id="guide-overview" class="clean-guide-drawer">
           <div class="clean-guide-body">
             <div class="clean-guide-item">
-              <strong>💡 Repère des 70% :</strong> Le consensus technique sur amendements ordinaires produit mécaniquement 60-70% d'accord. Les vraies alliances s'observent au-delà de 75% ou avec <strong>« ⭐ Textes majeurs »</strong>.
+              <strong>💡 Repère des 70% :</strong> Le consensus technique sur amendements ordinaires produit mécaniquement 60-70% d'accord. Les vraies alliances s'observent au-delà de 75% ou avec le filtre <strong>« ⭐ Majeurs »</strong>.
             </div>
             <div class="clean-guide-item">
-              <strong>Couleurs :</strong> <span style="color:var(--pour-color); font-weight:700;">🟢 Vert</span> (Pour communs) • <span style="color:var(--contre-color); font-weight:700;">🔵 Bleu</span> (Contre communs) • <span style="color:var(--diff-color); font-weight:700;">🟠 Ambre</span> (Positions opposées).
+              <strong>🎨 Code couleur des proximités :</strong> <span style="color:var(--pour-color); font-weight:700;">🟢 Vert</span> (Pour communs) • <span style="color:var(--contre-color); font-weight:700;">🔵 Bleu</span> (Contre communs) • <span style="color:var(--diff-color); font-weight:700;">🟠 Ambre</span> (Positions opposées).
+            </div>
+            <div class="clean-guide-item">
+              <strong>👥 Navigation Cockpit :</strong> Cliquez sur un groupe parlementaire pour centrer immédiatement toute l'analyse et les proximités sur sa ligne politique.
             </div>
           </div>
         </div>
@@ -514,10 +517,13 @@
         <div id="guide-heatmap" class="clean-guide-drawer">
           <div class="clean-guide-body">
             <div class="clean-guide-item">
-              <strong>💡 Lecture croisée :</strong> Chaque case croise deux groupes. Plus la couleur est vive, plus l'accord est fort. L'étalonnage dynamique min-max révèle les contrastes réels.
+              <strong>💡 Lecture croisée :</strong> Chaque case croise deux groupes. Plus la nuance est saturée, plus la convergence est forte. L'étalonnage dynamique min-max révèle les contrastes réels.
             </div>
             <div class="clean-guide-item">
-              <strong>Astuce :</strong> Cliquez sur l'en-tête d'un groupe pour trier toute la matrice selon ses proximités • Survolez une case pour voir le détail.
+              <strong>🎛️ Métriques de vote :</strong> Basculez entre <strong>🟢 Pour communs</strong> (soutien partagé), <strong>🔵 Accord global</strong> (Pour + Contre communs) et <strong>🔷 Contre communs</strong> (opposition partagée).
+            </div>
+            <div class="clean-guide-item">
+              <strong>⚡ Tri interactif en 1 clic :</strong> Cliquez sur l'en-tête d'un groupe pour ordonner toute la matrice selon ses proximités décroissantes • Survolez une case pour voir le détail des votes.
             </div>
           </div>
         </div>
@@ -563,7 +569,13 @@
         <div id="guide-radar" class="clean-guide-drawer">
           <div class="clean-guide-body">
             <div class="clean-guide-item">
-              <strong>💡 Comparateur direct :</strong> Analyse des votes partagés en soutien (« Pour »), en opposition commune (« Contre ») et désaccords nets. Le radar détaille par thématique, la courbe retrace l'évolution temporelle.
+              <strong>💡 Duel bilatéral :</strong> Analyse détaillée des votes partagés en soutien (Pour), en opposition commune (Contre) et des désaccords nets entre deux formations.
+            </div>
+            <div class="clean-guide-item">
+              <strong>📊 Thématiques &amp; Évolution :</strong> Le diagramme radar ventile les accords selon les 6 grands domaines législatifs • La courbe chronologique retrace l'évolution mois par mois.
+            </div>
+            <div class="clean-guide-item">
+              <strong>📸 Infographie certifiée :</strong> Cliquez sur <strong>Partager l'infographie</strong> pour générer instantanément une carte visuelle HD (PNG) prête à être publiée sur les réseaux sociaux.
             </div>
           </div>
         </div>
@@ -683,7 +695,13 @@
         <div id="guide-explorer" class="clean-guide-drawer">
           <div class="clean-guide-body">
             <div class="clean-guide-item">
-              <strong>💡 Recherche &amp; fiches :</strong> Recherchez une loi par mot-clé (ex: <em>motion, budget, retraites, immigration</em>) ou appliquez des filtres par groupe et statut. Cliquez sur un scrutin pour ouvrir sa fiche détaillée et générer une infographie citoyenne.
+              <strong>💡 Recherche &amp; fiches :</strong> Recherchez une loi par mot-clé (ex: <em>motion, budget, retraites, immigration</em>) ou appliquez des filtres par groupe et statut. Cliquez sur un scrutin pour ouvrir sa fiche détaillée avec hémicycle et générer une infographie citoyenne.
+            </div>
+            <div class="clean-guide-item">
+              <strong>⚡ Textes Majeurs &amp; Débats Clés rattachés :</strong> En mode <strong>« ⭐ Majeurs »</strong> (sélectionnable dans la barre du haut), les textes de loi comportant des amendements disputés affichent un bandeau <strong>« ⚡ X débats clés sur ce texte ▼ »</strong> : cliquez dessus pour déplier et voir tous les amendements enfants rattachés avec le vote de chaque groupe.
+            </div>
+            <div class="clean-guide-item">
+              <strong>🎯 Portée des scrutins (barre supérieure) :</strong> <strong>⭐ Majeurs</strong> montre les textes mères et votes solennels avec leurs amendements pliables • <strong>⚡ Débats Clés</strong> isole directement les amendements emblématiques • <strong>Tous</strong> affiche l'ensemble exhaustif des scrutins.
             </div>
           </div>
         </div>
@@ -770,7 +788,7 @@
               <strong>📋 Présence en personne vs Procuration :</strong> Le règlement autorise le vote par délégation (procuration). Nous mesurons la proportion de votes exercés physiquement par l'élu par rapport aux votes délégués à un collègue.
             </div>
             <div class="clean-guide-item">
-              <strong>⚖️ Travail hors Hémicycle :</strong> Une absence en séance publique peut correspondre à des responsabilités institutionnelles légitimes : travail en commissions permanentes, délégations parlementaires, missions d'information ou présidence de séance.
+              <strong>⚖️ Déontologie &amp; Travail hors Hémicycle :</strong> Une absence en séance publique peut correspondre à des responsabilités institutionnelles légitimes : commissions parlementaires, délégations, missions d'information ou travail en circonscription.
             </div>
           </div>
         </div>
@@ -1097,52 +1115,107 @@
   </div>
 </div>
 
-<!-- MODALE 1 : COMPRENDRE LE PROJET & DÉFINITIONS -->
+<!-- MODALE 1 : GUIDE DE L'OUTIL & MODE D'EMPLOI -->
 <div class="modal-backdrop" id="guideModal" onclick="closeGuideModalOnBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
-  <div class="modal-box" style="max-width: 820px;">
+  <div class="modal-box" style="max-width: 860px;">
     <div class="modal-header">
       <div>
-        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Cadre d'analyse &amp; Clés de lecture</div>
-        <h3 class="modal-title" id="guideModalTitle" style="font-size: 1.15rem; margin-top: 0.2rem;">📖 Comprendre le Projet &amp; Définitions</h3>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Mode d'emploi rapide &amp; Repères essentiels</div>
+        <h3 class="modal-title" id="guideModalTitle" style="font-size: 1.15rem; margin-top: 0.2rem;">📖 Guide de l'outil &amp; Mode d'emploi</h3>
       </div>
       <button type="button" class="modal-close-btn" onclick="closeGuideModal()" title="Fermer la fenêtre (Échap)">×</button>
     </div>
     <div class="modal-body">
       
-      <div>
-        <h4 style="margin: 0 0 0.4rem 0; font-size: 1rem; color: #0f172a;">🎯 Objectif de l'Observatoire</h4>
-        <p style="margin: 0; line-height: 1.6;">
-          Cet outil propose une analyse factuelle et transparente des votes à l'Assemblée nationale (16ᵉ et 17ᵉ législatures). Il permet d'étudier les proximités de vote, les coalitions effectives et la discipline des groupes parlementaires à partir des résultats officiels de l'hémicycle.
+      <!-- 1. OBJECTIF DU PROJET -->
+      <div class="guide-section">
+        <h4 class="guide-section-title">🎯 Objectif de l'Observatoire</h4>
+        <p class="guide-section-desc">
+          Cet outil citoyen indépendant propose une analyse factuelle, transparente et rigoureuse des votes à l'Assemblée nationale (16ᵉ et 17ᵉ législatures). Il permet à chacun de vérifier les alliances réelles, les convergences et la discipline des groupes parlementaires à partir des données 100 % officielles et brutes de l'hémicycle.
         </p>
       </div>
 
-      <div>
-        <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #0f172a;">📐 Règles de calcul &amp; Indicateurs clés</h4>
-        <div style="display: flex; flex-direction: column; gap: 0.65rem; line-height: 1.55;">
-          <p style="margin: 0;">
-            • <strong>Position majoritaire d'un groupe :</strong> pour chaque scrutin, le vote retenu (POUR, CONTRE ou ABSTENTION) correspond au choix de la majorité absolue des votants du groupe. Les groupes de moins de 3 votants sur un scrutin sont exclus de la comparaison pour éviter tout biais statistique.
-          </p>
-          <p style="margin: 0;">
-            • <strong>Discipline de vote :</strong> pourcentage de députés du groupe ayant suivi le vote majoritaire lors du scrutin (100 % = unanimité interne).
-          </p>
-          <p style="margin: 0;">
-            • <strong>Accords « Pour » vs Accords « Contre » :</strong>
-            <br>— <span style="color: var(--pour-color); font-weight:700;">Accords « Pour » :</span> textes et amendements votés POUR conjointement (adoption partagée).
-            <br>— <span style="color: var(--contre-color); font-weight:700;">Accords « Contre » :</span> textes et amendements votés CONTRE conjointement (rejet partagé).
-            <br>— <span style="color: var(--diff-color); font-weight:700;">Désaccords :</span> scrutins aux votes opposés (Pour vs Contre) ou vote opposé à une abstention.
-          </p>
-          <p style="margin: 0;">
-            • <strong>Le seuil technique des 70 % :</strong> à l'Assemblée nationale, le volume élevé d'amendements techniques et consensuels crée mécaniquement une base de proximité de 60 % à 70 % entre presque tous les groupes. Une convergence politique effective se mesure au-delà de 75-80 % ou sur le filtre « Textes majeurs ».
-          </p>
+      <!-- 2. MODE D'EMPLOI EN 3 ÉTAPES SIMPLES -->
+      <div class="guide-section" style="padding-top: 0.5rem; border-top: 1px solid #e2e8f0;">
+        <h4 class="guide-section-title">🚀 L'Observatoire en 3 étapes simples</h4>
+        <p class="guide-section-desc">
+          Trois gestes clés pour explorer n'importe quel vote ou proximité politique :
+        </p>
+
+        <div class="guide-step-grid">
+          <!-- Étape 1 -->
+          <div class="guide-step-card">
+            <span class="guide-step-number">Étape 1</span>
+            <div class="guide-step-title"><span>🎛️</span> Choisissez votre angle</div>
+            <div>
+              Dans la barre supérieure, sélectionnez votre période (<span class="guide-pill-tag all">17ᵉ Législature</span>, <span class="guide-pill-tag all">16ᵉ</span> ou <span class="guide-pill-tag all">Toutes</span>) et votre échelle d'analyse (<span class="guide-pill-tag all">👥 11 Groupes</span> ou <span class="guide-pill-tag all">🏛️ Coalitions</span> personnalisées en glisser-déposer).
+            </div>
+          </div>
+
+          <!-- Étape 2 -->
+          <div class="guide-step-card">
+            <span class="guide-step-number">Étape 2</span>
+            <div class="guide-step-title"><span>⭐</span> Ciblez l'essentiel</div>
+            <div>
+              Filtrez la portée selon vos besoins :
+              <br>• <span class="guide-pill-tag major">⭐ Majeurs</span> : Textes emblématiques &amp; motions.
+              <br>• <span class="guide-pill-tag pivot">⚡ Débats Clés</span> : Amendements disputés majeurs.
+              <br>• <span class="guide-pill-tag all">Tous</span> : L'intégralité (+12 900 votes).
+              <br><em>Astuce dans l'Explorateur :</em> Dépliez le bandeau <strong>« ⚡ X débats clés sur ce texte ▼ »</strong> sous un texte parent pour voir ses amendements rattachés.
+            </div>
+          </div>
+
+          <!-- Étape 3 -->
+          <div class="guide-step-card">
+            <span class="guide-step-number">Étape 3</span>
+            <div class="guide-step-title"><span>📸</span> Partagez &amp; exportez</div>
+            <div>
+              • <strong>Infographie HD (PNG) :</strong> Générez en 1 clic une carte visuelle certifiée 1200×675 px (prête pour X/Twitter, WhatsApp, LinkedIn) depuis le Face-à-face, une fiche scrutin ou un député.
+              <br>• <strong>Lien web direct :</strong> Les boutons <em>🔗 Copier le lien</em> mémorisent tous vos filtres actifs pour un partage direct.
+            </div>
+          </div>
         </div>
       </div>
 
-      <div>
-        <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #0f172a;">🏛️ Composition et effectifs des groupes (17ᵉ législature)</h4>
-        <p style="margin: 0 0 0.6rem 0; font-size: 0.85rem; color: #64748b;">
-          Effectifs officiels des 11 groupes politiques (membres et apparentés). <em>Note : le groupe des Non Inscrits n'étant pas une formation politique constituée et n'ayant pas de ligne de vote unifiée, il est exclu des matrices comparatives.</em>
+      <!-- 3. CLÉS DE COMPRÉHENSION POLITIQUE -->
+      <div class="guide-section" style="padding-top: 0.5rem; border-top: 1px solid #e2e8f0;">
+        <h4 class="guide-section-title">💡 Repères de lecture immédiats</h4>
+        
+        <div style="display: flex; flex-direction: column; gap: 0.55rem;">
+          <div class="guide-howto-card">
+            <div class="guide-howto-card-header">
+              <span>🎨 Le code couleur des votes</span>
+            </div>
+            <div>
+              • <span style="color:var(--pour-color); font-weight:700;">🟢 Accords « Pour » :</span> Textes votés POUR ensemble (adoption partagée).
+              <br>• <span style="color:var(--contre-color); font-weight:700;">🔵 Accords « Contre » :</span> Textes votés CONTRE ensemble (rejet commun).
+              <br>• <span style="color:var(--diff-color); font-weight:700;">🟠 Désaccords :</span> Votes opposés frontalement (Pour vs Contre).
+            </div>
+          </div>
+
+          <div class="guide-howto-card highlight">
+            <div class="guide-howto-card-header">
+              <span>💡 Le repère des 70 %</span>
+            </div>
+            <div>
+              En raison du grand volume d'amendements techniques ou consensuels votés en séance, le taux de proximité moyen entre groupes atteint mécaniquement <strong>60 % à 70 %</strong>. Une véritable proximité politique s'observe <strong>au-delà de 75-80 %</strong> ou en activant le filtre <strong>« ⭐ Majeurs »</strong>.
+            </div>
+          </div>
+
+          <div style="font-size: 0.85rem; color: #64748b; padding: 0.2rem 0.4rem;">
+            <em>Besoin de vérifier les formules mathématiques exactes, les critères de détection des textes ou le rôle de l'IA ?</em> Consultez la <button type="button" class="inline-legal-link" onclick="closeGuideModal(); openMethodologyModal();">Méthodologie, Données &amp; FAQ technique ↗</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. LES 11 GROUPES POLITIQUES -->
+      <div class="guide-section" style="padding-top: 0.5rem; border-top: 1px solid #e2e8f0;">
+        <h4 class="guide-section-title">🏛️ Les 11 Groupes politiques (17ᵉ législature)</h4>
+        <p class="guide-section-desc">
+          Forces parlementaires officielles (membres et apparentés). Seuil de majorité absolue : <strong>289 sièges</strong> sur 577.
         </p>
-        <div style="overflow-x: auto;">
+
+        <div style="overflow-x: auto; margin-top: 0.2rem;">
           <table class="modal-table" style="font-size: 0.88rem;">
             <thead>
               <tr>
@@ -1162,21 +1235,18 @@
               <tr><td><strong>LIOT (Libertés, Indépendants, Outre-mer et Territoires)</strong></td><td style="text-align: right; font-weight: 700;">23</td></tr>
               <tr><td><strong>Gauche Démocrate et Républicaine (GDR)</strong></td><td style="text-align: right; font-weight: 700;">17</td></tr>
               <tr><td><strong>Union des Droites pour la République (UDR)</strong></td><td style="text-align: right; font-weight: 700;">16</td></tr>
-              <tr style="color: #64748b; font-style: italic;"><td>Non Inscrits et sièges vacants (exclus de l'analyse)</td><td style="text-align: right;">10</td></tr>
+              <tr style="color: #64748b; font-style: italic;"><td>Non Inscrits et sièges vacants</td><td style="text-align: right;">10</td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div style="font-size: 0.8rem; color: #64748b; border-top: 1px solid var(--border-color); padding-top: 0.6rem;">
-        Total : 577 députés. Données issues du portail officiel de l'Assemblée nationale.
-      </div>
     </div>
     <div class="modal-footer">
       <span style="font-size: 0.8rem; color: #64748b;">Source : Open Data Assemblée nationale</span>
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <button type="button" class="btn btn-secondary" onclick="closeGuideModal(); openMethodologyModal();">
-          🔬 Méthodologie &amp; Rôle de l'IA ↗
+          🔬 Méthodologie, Données &amp; FAQ technique ↗
         </button>
         <button type="button" class="btn btn-secondary" onclick="closeGuideModal()">Fermer</button>
       </div>
@@ -1184,69 +1254,78 @@
   </div>
 </div>
 
-<!-- MODALE 2 : MÉTHODOLOGIE & RÔLE DE L'IA -->
+<!-- MODALE 2 : MÉTHODOLOGIE, DONNÉES & FAQ TECHNIQUE -->
 <div class="modal-backdrop" id="methodologyModal" onclick="closeMethodologyModalOnBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="methodologyModalTitle">
-  <div class="modal-box" style="max-width: 820px;">
+  <div class="modal-box" style="max-width: 860px;">
     <div class="modal-header">
       <div>
-        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Sources de données &amp; Algorithmes</div>
-        <h3 class="modal-title" id="methodologyModalTitle" style="font-size: 1.15rem; margin-top: 0.2rem;">🔬 Méthodologie &amp; Rôle de l'IA</h3>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Sources de données, Algorithmes &amp; Déontologie</div>
+        <h3 class="modal-title" id="methodologyModalTitle" style="font-size: 1.15rem; margin-top: 0.2rem;">🔬 Méthodologie, Données &amp; FAQ technique</h3>
       </div>
       <button type="button" class="modal-close-btn" onclick="closeMethodologyModal()" title="Fermer la fenêtre (Échap)">×</button>
     </div>
     <div class="modal-body">
 
-      <div>
-        <h4 style="margin: 0 0 0.4rem 0; font-size: 1rem; color: #0f172a;">🏛️ Données 100 % officielles et pures</h4>
-        <p style="margin: 0; line-height: 1.6;">
-          Toutes les données de cette plateforme proviennent directement et sans filtre du portail Open Data de l'Assemblée nationale (<code>data.assemblee-nationale.fr</code>). Elles couvrent l'intégralité des scrutins publics solennels et ordinaires consolidés des 16ᵉ et 17ᵉ législatures.
-        </p>
-        <p style="margin: 0.5rem 0 0 0; line-height: 1.6;">
-          <strong>Aucune altération :</strong> Les décomptes de votes, les votes nominatifs des députés et les résultats sont repris à l'état brut officiel, sans modification ni réinterprétation.
-        </p>
-      </div>
-
-      <div style="padding: 0.9rem 1.1rem; background: #f8fafc; border-left: 4px solid var(--primary); border-radius: 6px;">
-        <h4 style="margin: 0 0 0.4rem 0; font-size: 0.98rem; color: #0f172a;">🤖 Rôle strict et transparent de l'Intelligence Artificielle</h4>
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.88rem; color: #334155; line-height: 1.55;">
-          <p style="margin: 0;">
-            • <strong>Génération du projet :</strong> Le code source de l'interface et ses fonctionnalités interactives ont été développés avec l'assistance du modèle Google Gemini.
-          </p>
-          <p style="margin: 0;">
-            • <strong>Classification des scrutins (Hugging Face) :</strong> Un modèle de traitement du langage naturel hébergé sur Hugging Face est employé exclusivement pour classifier chaque scrutin parmi les 6 thématiques (Économie &amp; Budget, Sécurité &amp; Justice, Social &amp; Santé, Écologie &amp; Énergie, Institutions, International).
-          </p>
-          <p style="margin: 0;">
-            • <strong>Zéro interprétation par l'IA :</strong> L'intelligence artificielle n'intervient à aucun moment dans l'interprétation ou l'analyse des votes. Aucun avis, commentaire ou pondération n'est produit par une IA.
-          </p>
-          <p style="margin: 0;">
-            • <strong>Données 100 % brutes de l'Assemblée nationale :</strong> Tous les calculs (taux de proximité, discipline de vote, matrices de corrélation, assiduité) reposent sur des formules mathématiques directes et neutres, exécutées localement sur les données ouvertes de l'hémicycle.
-          </p>
-        </div>
-      </div>
-
-      <div>
-        <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #0f172a;">📐 Formule de calcul des accords</h4>
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; line-height: 1.55; font-size: 0.9rem;">
-          <p style="margin: 0;">
-            Le taux de proximité bilatéral entre deux groupes politiques se calcule selon la formule arithmétique directe :
-          </p>
-          <div style="padding: 0.6rem 1rem; background: #f1f5f9; border-radius: 6px; font-family: monospace; font-size: 0.88rem; color: #0f172a;">
-            Taux d'accord (%) = (Scrutins en accord ÷ Total des scrutins communs valides) × 100
+      <div class="faq-grid">
+        <!-- Q1 : Origine et intégrité des données -->
+        <div class="faq-item">
+          <h4 class="faq-question">🏛️ D'où proviennent les données et sont-elles altérées ?</h4>
+          <div class="faq-answer">
+            Toutes les données de cette plateforme sont extraites directement du <strong>portail Open Data officiel de l'Assemblée nationale</strong> (<code>data.assemblee-nationale.fr</code>). Elles couvrent l'intégralité des scrutins publics solennels et ordinaires des <strong>16ᵉ et 17ᵉ législatures</strong> (+12 900 scrutins consolidés).
+            <br><br>
+            <strong>Intégrité totale :</strong> Les décomptes officiels, les votes nominatifs de chaque député et les résultats (adopté / rejeté) sont repris à l'état brut officiel, sans aucune réinterprétation ni pondération partisane.
           </div>
-          <p style="margin: 0; font-size: 0.85rem; color: #64748b;">
-            Seuil de représentativité : les scrutins où un groupe compte moins de 3 votants sont exclus pour préserver l'exactitude statistique.
-          </p>
         </div>
-      </div>
 
-      <div style="margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
-        <h4 style="margin: 0 0 0.4rem 0; font-size: 1rem; color: #0f172a;">📊 Mesure d'audience respectueuse (Umami Analytics)</h4>
-        <p style="margin: 0; line-height: 1.6; font-size: 0.88rem; color: #334155;">
-          Afin de mesurer la fréquentation du site de façon éthique et sans atteinte à la vie privée, l'Observatoire utilise l'outil de statistiques anonyme et souverain <strong>Umami Analytics</strong>. Ce script fonctionne intégralement sans aucun cookie de suivi et sans collecter de données personnelles. Il s'exécute <strong>exclusivement lors de la consultation du site officiel</strong> (<code>observatoire-votes.fr</code>) et reste totalement désactivé lors d'une exécution locale depuis le dépôt GitHub (serveur Python local, localhost).
-        </p>
-        <p style="margin: 0.45rem 0 0 0; font-size: 0.85rem; color: #64748b;">
-          Pour le détail complet des données transmises et de celles strictement non collectées, consultez les <button type="button" class="inline-legal-link" onclick="closeMethodologyModal(); openMentionsModal();">Mentions légales ↗</button>.
-        </p>
+        <!-- Q2 : Détection Textes majeurs et Débats clés -->
+        <div class="faq-item">
+          <h4 class="faq-question">⭐ Comment sont détectés les « Textes majeurs » et les « Débats clés » ?</h4>
+          <div class="faq-answer">
+            L'Observatoire applique des critères stricts pour hiérarchiser les flux parlementaires :
+            <br>• <strong>Textes majeurs (⭐) :</strong> Détectés automatiquement à partir des qualifications juridiques officielles de l'Assemblée : votes solennels sur <em>l'ensemble d'un projet de loi</em> ou <em>d'une proposition de loi</em>, <em>lectures définitives</em>, <em>motions de censure</em> (art. 49 al. 2 et 49 al. 3 de la Constitution) et <em>déclarations de politique générale</em> (art. 49 al. 1).
+            <br>• <strong>Débats clés (⚡) :</strong> Amendements et sous-amendements décisifs ayant suscité de vifs clivages politiques, enrichis d'une synthèse factuelle pour en comprendre l'enjeu direct.
+            <br>• <strong>Arborescence Parent-Enfant :</strong> Chaque texte majeur est relié à ses amendements enfants via le champ relationnel <code>scrutins_lies</code>. Cela permet de déplier l'accordéon des débats rattachés directement sous la fiche du texte mère dans l'Explorateur.
+          </div>
+        </div>
+
+        <!-- Q3 : Formules de calcul exactes -->
+        <div class="faq-item">
+          <h4 class="faq-question">📐 Quelles sont les formules mathématiques exactes des calculs ?</h4>
+          <div class="faq-answer">
+            Les indicateurs reposent sur des calculs arithmétiques neutres exécutés localement :
+            <br><br>
+            • <strong>Position officielle d'un groupe :</strong> Choix de la majorité absolue des votants du groupe (POUR, CONTRE ou ABSTENTION).
+            <br>• <strong>Seuil de représentativité :</strong> Si un groupe compte <strong>moins de 3 votants</strong> sur un scrutin, il est exclu du calcul sur ce scrutin afin d'éviter tout artefact statistique.
+            <br>• <strong>Formule du Taux d'accord bilatéral :</strong>
+            <div class="faq-code-box">
+              Taux d'accord (%) = (Scrutins en accord ÷ Total des scrutins communs valides) × 100
+            </div>
+            • <strong>Discipline de vote :</strong> Pourcentage de députés du groupe ayant voté en conformité avec le vote majoritaire de leur formation (100 % = unanimité interne).
+            <br>• <strong>Coalitions sur mesure :</strong> Le vote d'une coalition correspond à la majorité absolue des sièges de ses groupes membres sur chaque scrutin (seuil de majorité absolue : 289 sièges).
+          </div>
+        </div>
+
+        <!-- Q4 : Rôle de l'Intelligence Artificielle -->
+        <div class="faq-item">
+          <h4 class="faq-question">🤖 Quel est le rôle exact de l'Intelligence Artificielle ?</h4>
+          <div class="faq-answer">
+            L'IA est cantonnée à un rôle technique strict et transparent :
+            <br>• <strong>Génération du code :</strong> Le développement de l'interface et des algorithmes interactifs a été réalisé avec l'assistance du modèle Google Gemini.
+            <br>• <strong>Classification thématique NLP (Hugging Face) :</strong> Un modèle de traitement du langage naturel classe chaque texte parmi 6 commissions thématiques officielles (Économie, Sécurité, Social, Écologie, Institutions, International).
+            <br>• <strong>Zéro interprétation subjective :</strong> Aucune IA n'intervient dans l'analyse, le commentaire ou la pondération des votes politiques. Tous les taux affichés sont purement arithmétiques.
+          </div>
+        </div>
+
+        <!-- Q5 : Respect de la vie privée et mesure d'audience -->
+        <div class="faq-item">
+          <h4 class="faq-question">📊 Quelles données sont collectées lors de votre visite ?</h4>
+          <div class="faq-answer">
+            L'Observatoire utilise <strong>Umami Analytics</strong>, une solution d'analyse d'audience souveraine et respectueuse de la vie privée :
+            <br>• <strong>Zéro cookie de suivi</strong>, aucune donnée personnelle ni adresse IP n'est collectée ou stockée.
+            <br>• Le script fonctionne <strong>exclusivement sur le site officiel en production</strong> (<code>observatoire-votes.fr</code>) et reste totalement inactif lors d'un lancement en local (localhost).
+            <br>Pour plus de détails, consultez les <button type="button" class="inline-legal-link" onclick="closeMethodologyModal(); openMentionsModal();">Mentions légales ↗</button>.
+          </div>
+        </div>
       </div>
 
     </div>
@@ -1257,7 +1336,7 @@
           Portail Open Data AN ↗
         </a>
         <button type="button" class="btn btn-secondary" onclick="closeMethodologyModal(); openGuideModal();">
-          📖 Guide &amp; Définitions ↗
+          📖 Guide de l'outil &amp; Mode d'emploi ↗
         </button>
         <button type="button" class="btn btn-secondary" onclick="closeMethodologyModal()">Fermer</button>
       </div>
@@ -1416,10 +1495,10 @@
 
     <div class="footer-links">
       <button type="button" class="footer-btn-link" onclick="openGuideModal()">
-        📖 Guide de l'outil &amp; Définitions
+        📖 Guide de l'outil &amp; Mode d'emploi
       </button>
       <button type="button" class="footer-btn-link" onclick="openMethodologyModal()">
-        🔬 Méthodologie &amp; Rôle de l'IA
+        🔬 Méthodologie, Données &amp; FAQ technique
       </button>
       <a href="https://data.assemblee-nationale.fr/" target="_blank" rel="noopener noreferrer" class="footer-a-link">
         🏛️ Open Data AN ↗
