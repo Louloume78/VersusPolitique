@@ -35,7 +35,7 @@
   <link rel="apple-touch-icon" href="assets/votes-logo.png">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261017j">
 
   <!-- Mesure d'audience (Umami Analytics) - Désactivé en environnement local -->
   <script>
@@ -357,15 +357,15 @@
         <div class="home-stack-card card-attendance" style="--stack-idx: 4;" onclick="switchTab('tab-attendance')">
           <div class="stack-card-content">
             <div class="stack-card-tag">
-              <span class="stack-badge-icon">⏱️</span>
-              <span class="stack-badge-label">Présence &amp; Mobilisation</span>
+              <span class="stack-badge-icon">🧭</span>
+              <span class="stack-badge-label">Députoscope &amp; Assiduité</span>
             </div>
             <h3 class="stack-card-title">« Nos élus sont-ils vraiment présents dans l'Hémicycle ? »</h3>
             <p class="stack-card-desc">
-              Distinguez la figuration du travail de fond : comparez la présence sur les textes majeurs et les marathons d'amendements, découvrez le recours à la procuration et évaluez l'assiduité de chaque député dans la matrice quadrant.
+              Passez au crible l'assiduité des <strong>577 députés</strong> dans le <strong>Députoscope 2D</strong> (<em>Piliers de l'Hémicycle</em> vs <em>Décrochage</em>). Comparez la mobilisation des forces politiques sur les <strong>Textes Clés</strong> face à leur <strong>Présence Globale</strong> ordinaire, et découvrez les scrutins décidés à quelques voix près par absence.
             </p>
             <div class="stack-card-footer">
-              <span class="stack-card-btn">Consulter l'Assiduité des Élus ➔</span>
+              <span class="stack-card-btn">Explorer le Députoscope &amp; l'Assiduité ➔</span>
             </div>
           </div>
           <div class="stack-card-visual">
@@ -374,26 +374,45 @@
                 <span class="mockup-dot red"></span>
                 <span class="mockup-dot yellow"></span>
                 <span class="mockup-dot green"></span>
-                <span class="mockup-title">Baromètre de mobilisation</span>
+                <span class="mockup-title">Députoscope 2D &amp; Baromètre</span>
               </div>
-              <div class="mockup-body">
-                <div class="mockup-row">
-                  <span class="mockup-grp">RN</span>
-                  <div class="mockup-bar-bg"><div class="mockup-bar-fill fill-green" style="width: 40.1%;"></div></div>
-                  <span class="mockup-pct">40%</span>
+              <div class="mockup-body mockup-attendance-body">
+                <div class="mockup-att-item">
+                  <div class="mockup-att-grp">
+                    <span class="mockup-party-dot" style="background-color: #cc2443;"></span>
+                    <strong>LFI</strong>
+                  </div>
+                  <div class="mockup-att-bars">
+                    <div class="mockup-att-bar-wrap">
+                      <div class="mockup-att-bar-bg"><div class="mockup-att-fill fill-blue" style="width: 48%;"></div></div>
+                      <span class="mockup-att-val">48% Clés</span>
+                    </div>
+                    <div class="mockup-att-bar-wrap">
+                      <div class="mockup-att-bar-bg"><div class="mockup-att-fill fill-green" style="width: 28%;"></div></div>
+                      <span class="mockup-att-val">28% Global</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="mockup-row">
-                  <span class="mockup-grp">LFI</span>
-                  <div class="mockup-bar-bg"><div class="mockup-bar-fill fill-green" style="width: 39.0%;"></div></div>
-                  <span class="mockup-pct">39%</span>
+                <div class="mockup-att-item">
+                  <div class="mockup-att-grp">
+                    <span class="mockup-party-dot" style="background-color: #0d378a;"></span>
+                    <strong>RN</strong>
+                  </div>
+                  <div class="mockup-att-bars">
+                    <div class="mockup-att-bar-wrap">
+                      <div class="mockup-att-bar-bg"><div class="mockup-att-fill fill-blue" style="width: 44%;"></div></div>
+                      <span class="mockup-att-val">44% Clés</span>
+                    </div>
+                    <div class="mockup-att-bar-wrap">
+                      <div class="mockup-att-bar-bg"><div class="mockup-att-fill fill-green" style="width: 33%;"></div></div>
+                      <span class="mockup-att-val">33% Global</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="mockup-row">
-                  <span class="mockup-grp">EPR</span>
-                  <div class="mockup-bar-bg"><div class="mockup-bar-fill fill-blue" style="width: 28.2%;"></div></div>
-                  <span class="mockup-pct">28%</span>
-                </div>
-                <div class="mockup-chips-strip" style="margin-top: 0.5rem; font-size: 0.72rem; color: #94a3b8; justify-content: center; display: flex; gap: 0.4rem;">
-                  <span>🏛️ Piliers</span> • <span>🎯 Stratèges</span> • <span>🌙 Marathoniens</span>
+                <div class="mockup-chips-strip" style="margin-top: 0.6rem; font-size: 0.72rem; justify-content: center; display: flex; gap: 0.45rem; flex-wrap: wrap;">
+                  <span class="mockup-chip-pilier">🏛️ Piliers (Top 25%)</span>
+                  <span class="mockup-chip-fantome">👻 Décrochage</span>
+                  <span class="mockup-chip-couteau">⚖️ À quelques voix</span>
                 </div>
               </div>
             </div>
@@ -760,11 +779,11 @@
       <!-- Sous-navigation interactive de l'onglet -->
       <div class="attendance-subnav-bar">
         <div class="attendance-subnav-pill" role="tablist" aria-label="Sections d'assiduité">
-          <button type="button" class="attendance-subnav-btn active" data-view="groups" onclick="switchAttendanceSubView('groups')">
-            👥 Baromètre des Groupes
+          <button type="button" class="attendance-subnav-btn active" data-view="deputes" onclick="switchAttendanceSubView('deputes')">
+            🧭 Députoscope &amp; Quadrant 2D
           </button>
-          <button type="button" class="attendance-subnav-btn" data-view="deputes" onclick="switchAttendanceSubView('deputes')">
-            👤 Députoscope &amp; Quadrant 2D
+          <button type="button" class="attendance-subnav-btn" data-view="groups" onclick="switchAttendanceSubView('groups')">
+            🏛️ Radiographie des Groupes
           </button>
           <button type="button" class="attendance-subnav-btn" data-view="couteau" onclick="switchAttendanceSubView('couteau')">
             ⚖️ À quelques voix près
@@ -793,33 +812,55 @@
       </div>
 
       <div id="attendanceContent">
-        <!-- SOUS-VUE 1 : BAROMÈTRE DES GROUPES -->
-        <div id="subview-groups" class="attendance-subview active">
-          <!-- Cartes de synthèse KPIs -->
+        <!-- SOUS-VUE 1 : RADIOGRAPHIE & CULTURE PARLEMENTAIRE DES GROUPES -->
+        <div id="subview-groups" class="attendance-subview">
+          <!-- Cartes de synthèse KPIs collectifs -->
           <div class="kpi-row" id="groupsKpisRow"></div>
 
-          <!-- Graphique Chart.js -->
+          <!-- Baromètre comparatif des groupes (Histogramme animé fluide) -->
           <div class="attendance-chart-card">
             <div class="attendance-chart-head">
-              <h3>Mobilisation comparée : Textes Majeurs vs Présence Globale vs Procuration</h3>
-              <span class="chart-subtitle">Pourcentage moyen de députés votants au sein de chaque groupe politique</span>
+              <div class="chart-title-wrap">
+                <h3>Mobilisation comparée : Textes Clés vs Présence Globale</h3>
+                <span class="chart-subtitle">Comparez la participation sur les textes prioritaires face à l'assiduité ordinaire et cliquez pour trier</span>
+              </div>
             </div>
-            <div class="attendance-chart-canvas-wrap">
-              <canvas id="groupsAttendanceChart"></canvas>
+            <div class="groups-barometer-container" id="groupsBarometerContainer">
+              <!-- Contrôles & Légende interactive des métriques -->
+              <div class="barometer-controls" id="barometerControls"></div>
+
+              <!-- Zone de l'histogramme avec échelle graduée dynamique -->
+              <div class="barometer-chart-area" id="barometerChartArea">
+                <div class="barometer-axis-grid" id="barometerAxisGrid"></div>
+                <div class="barometer-rows-wrap" id="barometerRowsWrap"></div>
+              </div>
             </div>
           </div>
 
-          <!-- Tableau récapitulatif par groupe -->
+          <!-- Tableau récapitulatif & sociologie interne par groupe -->
           <div class="attendance-table-wrap">
+            <div class="table-intro-bar">
+              <div class="table-intro-title">
+                <strong>Tableau comparatif &amp; sociologie interne des groupes</strong>
+                <span class="table-intro-subtitle">Explorez les profils d'assiduité internes et basculez en 1 clic vers les députés de chaque parti</span>
+              </div>
+            </div>
             <table class="attendance-table">
               <thead>
                 <tr>
                   <th>Groupe politique</th>
-                  <th style="text-align: right;">Députés</th>
-                  <th style="text-align: right;">⭐ Textes Majeurs</th>
-                  <th style="text-align: right;">🌐 Présence Globale</th>
-                  <th style="text-align: right;">📋 Procurations</th>
-                  <th style="width: 25%;">Intensité de mobilisation</th>
+                  <th style="text-align: right;">Élus</th>
+                  <th class="sortable-th" id="thSortMajeurs" style="text-align: right;" onclick="setGroupsTableSort('majeurs')" title="Cliquer pour trier par Textes Clés">
+                    ⭐ Textes Clés <span class="sort-indicator" id="indSortMajeurs">▼</span>
+                  </th>
+                  <th class="sortable-th" id="thSortGlobal" style="text-align: right;" onclick="setGroupsTableSort('global')" title="Cliquer pour trier par Présence Globale">
+                    🌐 Présence Globale <span class="sort-indicator" id="indSortGlobal"></span>
+                  </th>
+                  <th class="sortable-th" id="thSortStrategique" style="text-align: center;" onclick="setGroupsTableSort('strategique')" title="Cliquer pour trier par Ciblage Stratégique">
+                    🎯 Ciblage Stratégique <span class="sort-indicator" id="indSortStrategique"></span>
+                  </th>
+                  <th style="width: 28%;">Structure interne des effectifs</th>
+                  <th style="text-align: center;">Députoscope</th>
                 </tr>
               </thead>
               <tbody id="groupsAttendanceTableBody"></tbody>
@@ -827,8 +868,8 @@
           </div>
         </div>
 
-        <!-- SOUS-VUE 2 : DÉPUTOSCOPE & QUADRANT 2D -->
-        <div id="subview-deputes" class="attendance-subview">
+        <!-- SOUS-VUE 2 : DÉPUTOSCOPE & QUADRANT 2D (PAR DÉFAUT) -->
+        <div id="subview-deputes" class="attendance-subview active">
           <!-- Matrice Quadrant 2D Nuage de points -->
           <div class="quadrant-chart-card">
             <div class="quadrant-chart-head">
@@ -836,14 +877,69 @@
                 <h3>Matrice Quadrant : Textes Majeurs vs Présence Globale</h3>
                 <span class="chart-subtitle" id="quadrantSubtitle">Positionnement des députés par rapport aux médianes de l'Assemblée nationale. Cliquez sur un point pour ouvrir la fiche de l'élu.</span>
               </div>
-              <div class="quadrant-legend-pills">
-                <span class="q-pill q-pill-pilier">🏛️ Piliers (Top 30)</span>
-                <span class="q-pill q-pill-stratege">🎯 Stratèges (Top 30)</span>
-                <span class="q-pill q-pill-marathonien">🌙 Marathoniens (Top 30)</span>
-                <span class="q-pill q-pill-fantome">👻 Décrochage (Flop 30)</span>
-                <span class="q-pill q-pill-standard">👤 Activité Régulière</span>
-                <span class="q-pill q-pill-mediane">━ Médiane (50%)</span>
-                <span class="q-pill q-pill-quartile">┅ 1ᵉʳ Quartile Q1 (25%)</span>
+              <!-- Légende & Filtres de la Matrice Quadrant -->
+              <div class="quadrant-legend-wrapper">
+                <!-- Repères statistiques : Médiane (bleu continu) & Quartiles Q1/Q3 (violet en tiret) -->
+                <div class="quadrant-benchmark-bar">
+                  <div class="benchmark-heading">
+                    <span class="benchmark-icon">📐</span>
+                    <span class="benchmark-label">Repères statistiques</span>
+                  </div>
+                  <div class="benchmark-items">
+                    <div class="benchmark-pill benchmark-mediane" title="Ligne Médiane (50% de l'effectif) : sépare les 4 quadrants d'activité">
+                      <span class="benchmark-line line-mediane" aria-hidden="true"></span>
+                      <span class="benchmark-name">Médiane</span>
+                      <span class="benchmark-detail" id="benchmarkMedianeText">Textes clés : — • Présence globale : —</span>
+                    </div>
+                    <div class="benchmark-pill benchmark-quartiles" title="Quartiles Q1 (25%) et Q3 (75%) : délimitent le cœur de distribution">
+                      <span class="benchmark-line line-quartiles" aria-hidden="true"></span>
+                      <span class="benchmark-name">Quartiles Q1 &amp; Q3</span>
+                      <span class="benchmark-detail" id="benchmarkQuartilesText">Q1 : — • Q3 : —</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Profils d'assiduité avec filtres interactifs en 1 clic -->
+                <div class="quadrant-filter-bar">
+                  <div class="filter-heading">
+                    <span class="filter-icon">🧭</span>
+                    <span class="filter-label">Profils d'assiduité</span>
+                  </div>
+                  <div class="quadrant-filter-pills" role="group" aria-label="Filtrer les députés par profil">
+                    <button type="button" class="q-filter-btn active" data-quadrant="ALL" onclick="setQuadrantFilter('ALL')">
+                      <span class="btn-text">Tous les députés</span>
+                      <span class="btn-count" id="qCountALL"></span>
+                    </button>
+                    <button type="button" class="q-filter-btn q-btn-pilier" data-quadrant="Pilier" onclick="setQuadrantFilter('Pilier')" title="Top 25% assiduité : au-dessus du 3ᵉ quartile sur les textes majeurs et en présence globale (Haut-Droit)">
+                      <span class="btn-icon">🏛️</span>
+                      <span class="btn-text">Piliers</span>
+                      <span class="btn-count" id="qCountPilier"></span>
+                    </button>
+                    <button type="button" class="q-filter-btn q-btn-fantome" data-quadrant="Fantôme" onclick="setQuadrantFilter('Fantôme')" title="Flop 25% assiduité : sous le 1ᵉʳ quartile sur les textes majeurs et en présence globale (Bas-Gauche)">
+                      <span class="btn-icon">👻</span>
+                      <span class="btn-text">Décrochage</span>
+                      <span class="btn-count" id="qCountFantome"></span>
+                    </button>
+                    <button type="button" class="q-filter-btn q-btn-standard" data-quadrant="Standard" onclick="setQuadrantFilter('Standard')" title="Activité régulière et profils intermédiaires dans le cœur de l'Assemblée nationale">
+                      <span class="btn-icon">👤</span>
+                      <span class="btn-text">Activité Régulière</span>
+                      <span class="btn-count" id="qCountStandard"></span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Mini-grille de décompte par parti (Option 3 : Baromètre par parti) -->
+                <div id="quadrantPartyBreakdown" class="quadrant-party-breakdown" style="display: none;">
+                  <div class="breakdown-header">
+                    <div class="breakdown-title-wrap">
+                      <span class="breakdown-icon">📊</span>
+                      <span class="breakdown-title" id="breakdownTitle">Part des effectifs par parti</span>
+                      <span class="breakdown-badge" id="breakdownTotalBadge"></span>
+                    </div>
+                    <span class="breakdown-subtitle" id="breakdownSubtitle">Proportion de députés de chaque groupe dans ce profil (triée par % décroissant) :</span>
+                  </div>
+                  <div class="breakdown-grid" id="breakdownGrid"></div>
+                </div>
               </div>
             </div>
             <div class="quadrant-canvas-wrap">
@@ -861,11 +957,9 @@
                 <option value="ALL">Tous les groupes politiques</option>
               </select>
               <select id="deputoscopeQuadrantSelect" onchange="onDeputoscopeFilterChange()" aria-label="Filtrer par profil d'assiduité">
-                <option value="ALL">Tous les profils (Quadrants)</option>
-                <option value="Pilier">🏛️ Piliers de l'Hémicycle (Top 30)</option>
-                <option value="Stratège">🎯 Stratèges / Spécialistes (Top 30)</option>
-                <option value="Marathonien">🌙 Marathoniens de l'Ombre (Top 30)</option>
-                <option value="Fantôme">👻 Décrochage / Absentéisme (Flop 30)</option>
+                <option value="ALL">Tous les profils</option>
+                <option value="Pilier">🏛️ Piliers</option>
+                <option value="Fantôme">👻 Décrochage</option>
                 <option value="Standard">👤 Activité Régulière</option>
               </select>
               <select id="deputoscopeSortSelect" onchange="onDeputoscopeFilterChange()" aria-label="Trier la liste des députés">
@@ -900,6 +994,22 @@
                 Dans chacun de ces votes décisifs, l'absence de quelques députés d'un seul groupe parlementaire a fait basculer le destin de la loi pour l'ensemble des Français.
               </p>
             </div>
+          </div>
+
+          <!-- Barre d'outils / Tri par toggle pill -->
+          <div class="couteau-toolbar">
+            <div class="couteau-sort-group">
+              <span class="couteau-sort-label">Trier par :</span>
+              <div class="couteau-toggle-pill" role="group" aria-label="Trier les scrutins par date ou par écart de voix">
+                <button type="button" class="couteau-pill-btn active" data-sort="date" onclick="setCouteauSort('date')" title="Trier par date (scrutins les plus récents en premier)">
+                  📅 Plus récents
+                </button>
+                <button type="button" class="couteau-pill-btn" data-sort="diff" onclick="setCouteauSort('diff')" title="Trier par écart de voix (plus serrés en premier, départagés par le nombre total de votants)">
+                  ⚡ Écart de voix
+                </button>
+              </div>
+            </div>
+            <span class="header-count-badge" id="couteauCountBadge"></span>
           </div>
 
           <div class="close-votes-feed" id="closeVotesList"></div>
@@ -1314,12 +1424,12 @@
   </script>
 
   <!-- Scripts applicatifs modulaires -->
-  <script defer src="js/constants.js?v=20261015"></script>
-  <script defer src="js/router.js?v=20261015"></script>
-  <script defer src="js/hemicycle.js?v=20261015"></script>
-  <script defer src="js/charts.js?v=20261015"></script>
-  <script defer src="js/share-card.js?v=20261015"></script>
-  <script defer src="js/attendance.js?v=20261015"></script>
-  <script defer src="js/app.js?v=20261015"></script>
+  <script defer src="js/constants.js?v=20261017"></script>
+  <script defer src="js/router.js?v=20261017"></script>
+  <script defer src="js/hemicycle.js?v=20261017"></script>
+  <script defer src="js/charts.js?v=20261017"></script>
+  <script defer src="js/share-card.js?v=20261017"></script>
+  <script defer src="js/attendance.js?v=20261017j"></script>
+  <script defer src="js/app.js?v=20261017"></script>
 </body>
 </html>

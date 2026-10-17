@@ -1038,9 +1038,9 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
 
   // 8. Hémicycle Parlementaire Vectoriel 2D
   const cx = 540;
-  const cy = 606;
-  const rIn = 130;
-  const rOut = 248;
+  const cy = 580;
+  const rIn = 126;
+  const rOut = 236;
   const deltaR = rOut - rIn;
   const coverageDeg = 216;
   const startDeg = 198;
@@ -1154,7 +1154,7 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
 
     // Sigle du parti au-dessus du secteur
     const rad = (midAngle * Math.PI) / 180;
-    const labelR = rOut + 20;
+    const labelR = rOut + 18;
     const lx = cx + labelR * Math.cos(rad);
     const ly = cy - labelR * Math.sin(rad);
 
@@ -1164,70 +1164,100 @@ function renderScrutinHemicycleShareCardToCanvas(s) {
     ctx.fillText(shortName, lx, ly + 5);
   });
 
-  // 9. Perchoir & Décompte officiel au centre de l'hémicycle (sans doublons ni chevauchement)
-  const boxW = 248;
+  // 9. Perchoir & Décompte officiel au centre de l'hémicycle (Format Scoreboard aéré, sans chevauchement)
+  const boxW = 212;
   const boxH = 88;
   const boxX = cx - (boxW / 2);
-  const boxY = cy - 86;
+  const boxY = cy - 62;
 
-  drawRoundRect(ctx, boxX, boxY, boxW, boxH, 14);
-  ctx.fillStyle = theme.isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.88)';
+  drawRoundRect(ctx, boxX, boxY, boxW, boxH, 12);
+  ctx.fillStyle = theme.isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.92)';
   ctx.fill();
   ctx.lineWidth = 1.2;
   ctx.strokeStyle = theme.boxBorder;
   ctx.stroke();
 
   // Titre du perchoir
-  ctx.font = '700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.textMuted;
   ctx.textAlign = 'center';
-  ctx.fillText('DÉCOMPTE DES VOIX', cx, boxY + 22);
+  ctx.fillText('DÉCOMPTE DES SUFFRAGES', cx, boxY + 17);
 
-  // Compteurs des voix avec puces de couleur
-  ctx.font = '800 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  // 3 Colonnes de score : Nombre au-dessus, Libellé en dessous
+  const col1X = cx - 66;
+  const col2X = cx;
+  const col3X = cx + 66;
+
+  // Ligne des chiffres
+  ctx.font = '800 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = '#10b981';
-  ctx.fillText(`● ${pourCount} Pour`, cx - 74, boxY + 48);
-  ctx.fillStyle = '#0e7490';
-  ctx.fillText(`● ${contreCount} Contre`, cx + 2, boxY + 48);
+  ctx.fillText(String(pourCount), col1X, boxY + 39);
+  ctx.fillStyle = '#0891b2';
+  ctx.fillText(String(contreCount), col2X, boxY + 39);
   ctx.fillStyle = '#f59e0b';
-  ctx.fillText(`● ${abstCount} Abst.`, cx + 76, boxY + 48);
+  ctx.fillText(String(abstCount), col3X, boxY + 39);
+
+  // Ligne des libellés de vote
+  ctx.font = '800 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = '#059669';
+  ctx.fillText('POUR', col1X, boxY + 53);
+  ctx.fillStyle = '#0284c7';
+  ctx.fillText('CONTRE', col2X, boxY + 53);
+  ctx.fillStyle = '#d97706';
+  ctx.fillText('ABST.', col3X, boxY + 53);
+
+  // Séparateurs verticaux discrets entre les colonnes
+  ctx.strokeStyle = theme.isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - 33, boxY + 25);
+  ctx.lineTo(cx - 33, boxY + 53);
+  ctx.moveTo(cx + 33, boxY + 25);
+  ctx.lineTo(cx + 33, boxY + 53);
+  ctx.stroke();
+
+  // Séparateur horizontal discret
+  ctx.beginPath();
+  ctx.moveTo(cx - 80, boxY + 61);
+  ctx.lineTo(cx + 80, boxY + 61);
+  ctx.stroke();
 
   // Ligne majorité requise sous le décompte
-  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.textSecondary;
-  ctx.fillText(`${exprimesCount} exprimés • Maj. requise : ${majRequise}`, cx, boxY + 72);
+  ctx.fillText(`${exprimesCount} exprimés • Maj. requise : ${majRequise}`, cx, boxY + 76);
 
   // Votants globaux sous le cockpit
-  ctx.font = '600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.textMuted;
-  ctx.fillText(`👥 ${votantsCount} députés votants / 577`, cx, cy + 18);
+  ctx.fillText(`👥 ${votantsCount} députés votants / 577`, cx, boxY + boxH + 16);
   ctx.textAlign = 'left';
 
-  // 10. Légende sous l'hémicycle
-  const legendBoxY = 650;
-  drawRoundRect(ctx, 84, legendBoxY, 912, 38, 10);
+  // 10. Légende sous l'hémicycle (Positionnée nettement sous les pointes de l'hémicycle)
+  const legendBoxY = 674;
+  drawRoundRect(ctx, 84, legendBoxY, 912, 34, 10);
   ctx.fillStyle = theme.boxBg;
   ctx.fill();
   ctx.lineWidth = 1;
   ctx.strokeStyle = theme.boxBorder;
   ctx.stroke();
 
-  ctx.font = '600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '600 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = theme.textSecondary;
   ctx.textAlign = 'center';
   ctx.fillText(
     `🟢 Pour   •   🔵 Contre   •   🟠 Abstention   •   ⚪ Frange : Absents (hauteur = présence)`,
     W / 2,
-    legendBoxY + 24
+    legendBoxY + 22
   );
   ctx.textAlign = 'left';
 
   // 11. Grille compacte des groupes (2 colonnes de 6 groupes)
-  const compactGridY = legendBoxY + 54;
+  const compactGridY = 724;
   const colW = 444;
   const itemH = 68;
   const colGap = 24;
-  const rowGap = 11;
+  const rowGap = 12;
 
   hemiGroupSectors.slice(0, 12).forEach((sec, idx) => {
     const col = idx < 6 ? 0 : 1;

@@ -10,11 +10,14 @@
 
 let attendanceData = null;
 let attendanceLoading = false;
-let currentAttendanceSubView = 'groups';
-let currentAttendanceLeg = 'ALL';
-let groupsChartInstance = null;
+let currentAttendanceSubView = 'deputes';
+let activeGroupsBarometerMetric = 'all'; // 'all' | 'majeurs' | 'physique' | 'procuration'
+let isBarometerAnimating = false;
+const BAROMETER_ROW_STEP = 54; // Hauteur de rangée (46px) + marge (8px)
 let quadrantChartInstance = null;
 let selectedDeputy = null;
+let currentCouteauSort = 'date'; // 'date' (plus récents d'abord) ou 'diff' (écart de voix)
+let currentGroupsTableSort = 'majeurs'; // 'majeurs' | 'global' | 'strategique'
 
 // État des filtres Députoscope
 let deputoscopeFilters = {
@@ -26,41 +29,57 @@ let deputoscopeFilters = {
 
 const QUADRANT_CONFIG = {
   'Pilier': {
-    label: '🏛️ Pilier de l\'Hémicycle (Top 30)',
+    label: '🏛️ Pilier de l\'Hémicycle',
     badgeClass: 'badge-pilier',
-    desc: 'Forte présence globale et sur les textes majeurs. Élu assidu au cœur des débats et des votes clés.'
-  },
-  'Stratège': {
-    label: '🎯 Stratège / Spécialiste (Top 30)',
-    badgeClass: 'badge-stratege',
-    desc: 'Présence ciblée : mobilisé au-dessus de la médiane sur les grands textes politiques, tout en déléguant les marathons d\'amendements.'
-  },
-  'Marathonien': {
-    label: '🌙 Marathonien de l\'Ombre (Top 30)',
-    badgeClass: 'badge-marathonien',
-    desc: 'Présent en séance lors des longues nuits d\'amendements techniques, avec une participation globale supérieure à la médiane.'
+    desc: 'Assiduité remarquable : participation supérieure au 3ᵉ quartile (Top 25%) à la fois sur les textes majeurs et en présence globale.'
   },
   'Fantôme': {
-    label: '👻 Décrochage / Absentéisme (Flop 30)',
+    label: '👻 Décrochage',
     badgeClass: 'badge-fantome',
-    desc: 'Participation globale et sur les textes majeurs en fort retrait par rapport à la médiane de l\'Assemblée nationale.'
+    desc: 'Participation en net retrait : assiduité inférieure au 1ᵉʳ quartile (Flop 25%) à la fois sur les textes majeurs et en présence globale.'
   },
   'Standard': {
     label: '👤 Activité Régulière',
     badgeClass: 'badge-standard',
-    desc: 'Participation intermédiaire et régulière, sans décrochage marqué ni sur-mobilisation atypique.'
+    desc: 'Participation intermédiaire et régulière, située dans le cœur d\'activité de l\'Assemblée nationale.'
   }
 };
 
 /**
- * Récupère les députés du scope de législature actif
+ * Calcule dynamiquement le profil d'un député selon les quartiles Q1 et Q3
+ * - Piliers : > Q3 Textes Majeurs ET > Q3 Présence Globale
+ * - Décrochage : < Q1 Textes Majeurs ET < Q1 Présence Globale
+ * - Activité Régulière : tout le reste (zone centrale et profils intermédiaires)
+ */
+function getDeputyProfile(dep, medians) {
+  if (!dep || !medians) return 'Standard';
+  const maj = Number(dep.taux_majeurs) || 0;
+  const glob = Number(dep.taux_global) || 0;
+  if (maj > medians.q3_majeur && glob > medians.q3_global) {
+    return 'Pilier';
+  }
+  if (maj < medians.q1_majeur && glob < medians.q1_global) {
+    return 'Fantôme';
+  }
+  return 'Standard';
+}
+
+/**
+ * Récupère les députés du scope de législature actif et actualise dynamiquement leur profil
  */
 function getAttendanceDeputes() {
   if (!attendanceData) return [];
+  let deps = [];
   if (attendanceData.deputes_by_leg && attendanceData.deputes_by_leg[currentAttendanceLeg]) {
-    return attendanceData.deputes_by_leg[currentAttendanceLeg];
+    deps = attendanceData.deputes_by_leg[currentAttendanceLeg];
+  } else {
+    deps = attendanceData.deputes || [];
   }
-  return attendanceData.deputes || [];
+  const medians = computeAttendanceMedians(deps);
+  deps.forEach(d => {
+    d.quadrant = getDeputyProfile(d, medians);
+  });
+  return deps;
 }
 
 /**
@@ -80,13 +99,12 @@ function getAttendanceGroupes() {
 function computeAttendanceMedians(deputes) {
   if (!deputes || deputes.length === 0) {
     return {
-      q1_global: 10.0, median_global: 22.7,
-      q1_majeur: 14.0, median_majeur: 32.0
+      q1_global: 16.0, median_global: 24.4, q3_global: 32.0,
+      q1_majeur: 31.4, median_majeur: 39.0, q3_majeur: 46.7
     };
   }
   const sortedGlobal = deputes.map(d => d.taux_global).sort((a, b) => a - b);
   const sortedMajeur = deputes.map(d => d.taux_majeurs).sort((a, b) => a - b);
-  const n = deputes.length;
 
   const getPercentile = (arr, p) => {
     const idx = (arr.length - 1) * p;
@@ -98,14 +116,19 @@ function computeAttendanceMedians(deputes) {
 
   const q1Global = getPercentile(sortedGlobal, 0.25);
   const medGlobal = getPercentile(sortedGlobal, 0.50);
+  const q3Global = getPercentile(sortedGlobal, 0.75);
+
   const q1Majeur = getPercentile(sortedMajeur, 0.25);
   const medMajeur = getPercentile(sortedMajeur, 0.50);
+  const q3Majeur = getPercentile(sortedMajeur, 0.75);
 
   return {
     q1_global: Math.round(q1Global * 10) / 10,
     median_global: Math.round(medGlobal * 10) / 10,
+    q3_global: Math.round(q3Global * 10) / 10,
     q1_majeur: Math.round(q1Majeur * 10) / 10,
-    median_majeur: Math.round(medMajeur * 10) / 10
+    median_majeur: Math.round(medMajeur * 10) / 10,
+    q3_majeur: Math.round(q3Majeur * 10) / 10
   };
 }
 
@@ -252,7 +275,7 @@ function switchAttendanceSubView(viewKey) {
 
   // Synchronisation avec le routeur URL uniquement si on est bien sur l'onglet Assiduité
   if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress && (typeof currentActiveTab !== 'undefined' && currentActiveTab === 'tab-attendance')) {
-    DeepLinkRouter.setParams({ subview: viewKey === 'groups' ? null : viewKey });
+    DeepLinkRouter.setParams({ subview: viewKey === 'deputes' ? null : viewKey });
   }
 
   if (viewKey === 'groups') {
@@ -304,162 +327,592 @@ function renderAttendanceViews() {
 }
 
 /* =========================================================================
-   VUE 1 : BAROMÈTRE DES GROUPES (MACRO)
+   VUE 1 : RADIOGRAPHIE & CULTURE PARLEMENTAIRE DES GROUPES (MACRO)
    ========================================================================= */
 
-function renderGroupsBarometer() {
-  const groups = [...getAttendanceGroupes()];
+/**
+ * Redirige instantanément vers le Députoscope avec le groupe ciblé pré-sélectionné
+ */
+function jumpToDeputoscopeGroup(groupName) {
+  switchAttendanceSubView('deputes');
+  const groupSelect = document.getElementById('deputoscopeGroupSelect');
+  if (groupSelect) groupSelect.value = groupName;
+  if (typeof deputoscopeFilters !== 'undefined') {
+    deputoscopeFilters.group = groupName;
+    deputoscopeFilters.quadrant = 'ALL';
+  }
+  updateQuadrantLegendActivePill();
+  renderQuadrantChart();
+  applyDeputoscopeFilters();
+
+  const depSec = document.getElementById('subview-deputes');
+  if (depSec) {
+    depSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/**
+ * Calcule et renvoie les groupes enrichis avec leurs métriques sociologiques et démocratiques
+ */
+function getEnrichedAttendanceGroups() {
+  const rawGroups = [...getAttendanceGroupes()];
+  if (!rawGroups || rawGroups.length === 0) return [];
+
+  const currentDeps = getAttendanceDeputes();
+
+  const groups = rawGroups.map(g => {
+    const gDeps = currentDeps.filter(d => d.groupe === g.groupe);
+    const totalDeps = gDeps.length || g.effectif || 1;
+
+    // Décompte de la structure interne selon les quartiles (Piliers / Réguliers / Décrochage)
+    const nbPiliers = gDeps.filter(d => d.quadrant === 'Pilier').length;
+    const nbFantomes = gDeps.filter(d => d.quadrant === 'Fantôme' || d.quadrant === 'Fantome').length;
+    const nbStandard = Math.max(0, totalDeps - nbPiliers - nbFantomes);
+
+    const pctPiliers = Math.round((nbPiliers / totalDeps) * 1000) / 10;
+    const pctFantomes = Math.round((nbFantomes / totalDeps) * 1000) / 10;
+    const pctStandard = Math.round((nbStandard / totalDeps) * 1000) / 10;
+
+    // Ventilation démocratique : Présence physique en personne vs Procurations
+    const delegRatio = Math.min(100, Math.max(0, g.taux_delegation || 0)) / 100;
+    const tauxPhysique = Math.round(g.taux_global * (1 - delegRatio) * 10) / 10;
+    const tauxProcuration = Math.round(g.taux_global * delegRatio * 10) / 10;
+
+    // Ciblage stratégique (effet loupe des textes majeurs vs quotidien)
+    const ecartMajeurs = Math.round((g.taux_majeurs - g.taux_global) * 10) / 10;
+    const ratioMajeurs = g.taux_global > 0 ? (g.taux_majeurs / g.taux_global) : 1;
+
+    const color = (typeof getGroupColor === 'function') ? getGroupColor(g.groupe) : '#64748b';
+    const shortName = (typeof GROUP_SHORT_NAMES !== 'undefined' && GROUP_SHORT_NAMES[g.groupe]) || g.groupe;
+
+    return {
+      ...g,
+      totalDeps,
+      shortName,
+      color,
+      nbPiliers,
+      nbFantomes,
+      nbStandard,
+      pctPiliers,
+      pctFantomes,
+      pctStandard,
+      tauxPhysique,
+      tauxProcuration,
+      ecartMajeurs,
+      ratioMajeurs
+    };
+  });
+
+  return groups;
+}
+
+/**
+ * Change le tri actif pour le tableau comparatif des groupes
+ * (NE régénère PAS le baromètre comparatif pour préserver la fluidité)
+ */
+function setGroupsTableSort(sortKey) {
+  if (['majeurs', 'global', 'strategique'].includes(sortKey)) {
+    currentGroupsTableSort = sortKey;
+    renderGroupsBarometerTable();
+  }
+}
+
+/**
+ * Rendu exclusif du tableau comparatif des groupes
+ */
+function renderGroupsBarometerTable(providedGroups) {
+  const groups = providedGroups || getEnrichedAttendanceGroups();
   if (!groups || groups.length === 0) return;
-  
-  // Remplir les cartes de synthèse (KPIs)
-  const topMajeurs = groups.reduce((prev, curr) => (curr.taux_majeurs > prev.taux_majeurs ? curr : prev), groups[0]);
-  const lowMajeurs = groups.reduce((prev, curr) => (curr.taux_majeurs < prev.taux_majeurs ? curr : prev), groups[0]);
-  const topDelegation = groups.reduce((prev, curr) => (curr.taux_delegation > prev.taux_delegation ? curr : prev), groups[0]);
 
-  const kpisContainer = document.getElementById('groupsKpisRow');
-  if (kpisContainer) {
-    kpisContainer.innerHTML = `
-      <div class="kpi-card highlight-green">
-        <div class="kpi-icon">🏆</div>
-        <div class="kpi-label">Plus forte mobilisation (Majeurs)</div>
-        <div class="kpi-value">${topMajeurs.taux_majeurs}%</div>
-        <div class="kpi-sub">${topMajeurs.groupe} (${topMajeurs.effectif} députés)</div>
-      </div>
-      <div class="kpi-card highlight-amber">
-        <div class="kpi-icon">📉</div>
-        <div class="kpi-label">Plus faible mobilisation (Majeurs)</div>
-        <div class="kpi-value">${lowMajeurs.taux_majeurs}%</div>
-        <div class="kpi-sub">${lowMajeurs.groupe} (${lowMajeurs.effectif} députés)</div>
-      </div>
-      <div class="kpi-card highlight-blue">
-        <div class="kpi-icon">📋</div>
-        <div class="kpi-label">Plus fort recours à la procuration</div>
-        <div class="kpi-value">${topDelegation.taux_delegation}%</div>
-        <div class="kpi-sub">${topDelegation.groupe} (votes par délégation)</div>
-      </div>
-    `;
+  const tableGroups = [...groups];
+  if (currentGroupsTableSort === 'global') {
+    tableGroups.sort((a, b) => b.taux_global - a.taux_global);
+  } else if (currentGroupsTableSort === 'strategique') {
+    tableGroups.sort((a, b) => (b.ratioMajeurs - a.ratioMajeurs) || (b.ecartMajeurs - a.ecartMajeurs));
+  } else {
+    // Par défaut : tri par textes majeurs
+    tableGroups.sort((a, b) => b.taux_majeurs - a.taux_majeurs);
   }
 
-  // Tracé du graphique Chart.js comparatif
-  const ctx = document.getElementById('groupsAttendanceChart')?.getContext('2d');
-  if (ctx) {
-    if (typeof Chart === 'undefined') {
-      console.warn("Chart.js n'est pas disponible.");
-      return;
-    }
-    if (groupsChartInstance) groupsChartInstance.destroy();
+  // Synchronisation des indicateurs de tri sur les en-têtes de colonnes
+  const indMajeurs = document.getElementById('indSortMajeurs');
+  const indGlobal = document.getElementById('indSortGlobal');
+  const indStrat = document.getElementById('indSortStrategique');
+  if (indMajeurs) indMajeurs.textContent = (currentGroupsTableSort === 'majeurs' ? '▼' : '');
+  if (indGlobal) indGlobal.textContent = (currentGroupsTableSort === 'global' ? '▼' : '');
+  if (indStrat) indStrat.textContent = (currentGroupsTableSort === 'strategique' ? '▼' : '');
 
-    const labels = groups.map(g => g.groupe);
-    const dataMajeurs = groups.map(g => g.taux_majeurs);
-    const dataGlobal = groups.map(g => g.taux_global);
-    const dataDelegation = groups.map(g => g.taux_delegation);
+  const thMajeurs = document.getElementById('thSortMajeurs');
+  const thGlobal = document.getElementById('thSortGlobal');
+  const thStrat = document.getElementById('thSortStrategique');
+  if (thMajeurs) thMajeurs.classList.toggle('sort-active', currentGroupsTableSort === 'majeurs');
+  if (thGlobal) thGlobal.classList.toggle('sort-active', currentGroupsTableSort === 'global');
+  if (thStrat) thStrat.classList.toggle('sort-active', currentGroupsTableSort === 'strategique');
 
-    groupsChartInstance = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: '⭐ Textes Majeurs (%)',
-            data: dataMajeurs,
-            backgroundColor: 'rgba(59, 130, 246, 0.85)',
-            borderColor: '#3b82f6',
-            borderWidth: 1,
-            borderRadius: 6
-          },
-          {
-            label: '🌐 Présence Globale (%)',
-            data: dataGlobal,
-            backgroundColor: 'rgba(16, 185, 129, 0.85)',
-            borderColor: '#10b981',
-            borderWidth: 1,
-            borderRadius: 6
-          },
-          {
-            label: '📋 Recours Procuration (%)',
-            data: dataDelegation,
-            backgroundColor: 'rgba(245, 158, 11, 0.85)',
-            borderColor: '#f59e0b',
-            borderWidth: 1,
-            borderRadius: 6
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: 'index',
-          intersect: false
-        },
-        scales: {
-          x: {
-            ticks: {
-              color: '#94a3b8',
-              font: { size: 11, weight: '500' },
-              maxRotation: 35,
-              minRotation: 20
-            },
-            grid: { color: 'rgba(255, 255, 255, 0.05)' }
-          },
-          y: {
-            beginAtZero: true,
-            max: 60,
-            ticks: {
-              color: '#94a3b8',
-              callback: val => val + '%'
-            },
-            grid: { color: 'rgba(255, 255, 255, 0.07)' }
-          }
-        },
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              color: '#1e293b',
-              font: { size: 12, weight: '600' },
-              boxWidth: 14,
-              padding: 15
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: context => ` ${context.dataset.label} : ${context.raw}%`
-            }
-          }
-        }
-      }
-    });
-  }
-
-  // Tableau détaillé par groupe
   const tbody = document.getElementById('groupsAttendanceTableBody');
   if (tbody) {
-    tbody.innerHTML = groups.map(g => {
-      const color = (typeof getGroupColor === 'function') ? getGroupColor(g.groupe) : '#94a3b8';
+    tbody.innerHTML = tableGroups.map(g => {
+      const safeGroupName = (g.groupe || '').replace(/'/g, "\\'");
+      const isHighFocus = g.ratioMajeurs >= 1.6;
+
       return `
         <tr>
           <td>
             <div class="group-cell">
-              <span class="color-dot" style="background-color: ${color};"></span>
-              <strong>${g.groupe}</strong>
+              <span class="color-dot" style="background-color: ${g.color};"></span>
+              <div class="group-names">
+                <span class="group-badge-short">${g.shortName}</span>
+                <span class="group-name-full">${g.groupe}</span>
+              </div>
             </div>
           </td>
-          <td class="num-cell">${g.effectif}</td>
-          <td class="num-cell highlight-cell">
+          <td class="num-cell"><strong>${g.totalDeps}</strong></td>
+          <td class="num-cell highlight-cell ${currentGroupsTableSort === 'majeurs' ? 'cell-sort-active' : ''}">
             <span class="pct-badge high">${g.taux_majeurs}%</span>
           </td>
-          <td class="num-cell">${g.taux_global}%</td>
-          <td class="num-cell">${g.taux_delegation}%</td>
-          <td>
-            <div class="table-progress-bar">
-              <div class="progress-fill fill-majeurs" style="width: ${Math.min(100, g.taux_majeurs * 1.8)}%;"></div>
+          <td class="num-cell ${currentGroupsTableSort === 'global' ? 'cell-sort-active' : ''}">
+            <div class="global-presence-wrap">
+              <strong>${g.taux_global}%</strong>
+              <div class="presence-sub-stats">
+                <span class="sub-proc" title="Sur l'ensemble des votes émis par ce groupe, ${g.taux_delegation}% ont été effectués par procuration (délégation)">dont ${g.taux_delegation}% par procuration</span>
+              </div>
             </div>
+          </td>
+          <td style="text-align: center;" class="${currentGroupsTableSort === 'strategique' ? 'cell-sort-active' : ''}">
+            <div class="strategy-badge ${isHighFocus ? 'badge-focus-high' : 'badge-focus-norm'}" title="Écart entre textes majeurs et présence globale : +${g.ecartMajeurs} pts (ratio ×${g.ratioMajeurs.toFixed(2)})">
+              <span class="badge-ratio">×${g.ratioMajeurs.toFixed(2)}</span>
+              <span class="badge-diff">+${g.ecartMajeurs} pts</span>
+            </div>
+          </td>
+          <td>
+            <div class="group-structure-wrap">
+              <div class="group-structure-bar" title="${g.groupe} : ${g.nbPiliers} Piliers (${g.pctPiliers}%), ${g.nbStandard} Réguliers (${g.pctStandard}%), ${g.nbFantomes} Décrochage (${g.pctFantomes}%)">
+                <div class="seg-pilier" style="width: ${g.pctPiliers}%;"></div>
+                <div class="seg-standard" style="width: ${g.pctStandard}%;"></div>
+                <div class="seg-fantome" style="width: ${g.pctFantomes}%;"></div>
+              </div>
+              <div class="group-structure-labels">
+                <span class="lbl-pilier" title="${g.nbPiliers} députés piliers">${g.pctPiliers}% pil.</span>
+                <span class="lbl-standard" title="${g.nbStandard} députés réguliers">${g.pctStandard}% rég.</span>
+                <span class="lbl-fantome" title="${g.nbFantomes} députés en décrochage">${g.pctFantomes}% décr.</span>
+              </div>
+            </div>
+          </td>
+          <td style="text-align: center;">
+            <button type="button" class="btn-jump-deputoscope" onclick="jumpToDeputoscopeGroup('${safeGroupName}')" title="Explorer les ${g.totalDeps} députés de ${g.groupe} dans le Députoscope">
+              🔍 Voir élus ➔
+            </button>
           </td>
         </tr>
       `;
     }).join('');
   }
+}
+
+/**
+ * Calcule l'échelle dynamique et les graduations adaptées (Textes Clés vs Présence Globale)
+ */
+function getBarometerAxisConfig(metric, groups) {
+  const maxVal = (groups && groups.length > 0) ? Math.max(...groups.map(g => Math.max(g.taux_majeurs || 0, g.taux_global || 0)), 50) : 55;
+  const max = Math.ceil(maxVal / 10) * 10;
+  const ticks = [];
+  for (let i = 0; i <= max; i += 10) ticks.push(i);
+  return { max, ticks };
+}
+
+/**
+ * Rendu des boutons de légende / contrôles interactifs
+ */
+function renderGroupsBarometerControls() {
+  const container = document.getElementById('barometerControls');
+  if (!container) return;
+
+  const current = activeGroupsBarometerMetric;
+  const isAll = (current === 'all');
+
+  container.innerHTML = `
+    <div class="barometer-controls-bar">
+      <div class="barometer-controls-label">
+        <span class="controls-label-title">Métrique affichée :</span>
+        <span class="controls-label-hint">Cliquez sur une métrique pour trier et isoler les forces politiques</span>
+      </div>
+      <div class="barometer-controls-pills">
+        <button type="button" class="barometer-pill ${isAll ? 'active' : 'dimmed'}" id="btnBarometer-all" onclick="setGroupsBarometerMetric('all')" title="Afficher les 2 métriques comparatives côte à côte">
+          <span class="pill-dot dot-all"></span>
+          <span class="pill-name">Vue comparative (2 métriques)</span>
+        </button>
+        <button type="button" class="barometer-pill ${current === 'majeurs' ? 'active' : (isAll ? '' : 'dimmed')}" id="btnBarometer-majeurs" onclick="setGroupsBarometerMetric('majeurs')" title="Isoler les Textes Clés et trier les groupes">
+          <span class="pill-dot dot-majeurs"></span>
+          <span class="pill-name">⭐ Textes Clés</span>
+        </button>
+        <button type="button" class="barometer-pill ${current === 'global' ? 'active' : (isAll ? '' : 'dimmed')}" id="btnBarometer-global" onclick="setGroupsBarometerMetric('global')" title="Isoler la Présence Globale et trier les groupes">
+          <span class="pill-dot dot-global"></span>
+          <span class="pill-name">🌐 Présence Globale</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Rendu dynamique de l'axe gradué horizontal (graduations & lignes verticales)
+ */
+function renderGroupsBarometerAxis(config) {
+  const gridContainer = document.getElementById('barometerAxisGrid');
+  if (!gridContainer) return;
+
+  const { max, ticks } = config;
+  gridContainer.innerHTML = `
+    <div class="axis-header-row">
+      <div class="axis-ticks-container">
+        ${ticks.map(t => {
+          const leftPct = (t / max) * 100;
+          return `
+            <div class="axis-tick-wrap" style="left: ${leftPct}%;">
+              <span class="axis-tick-lbl">${t}%</span>
+              <div class="axis-tick-line"></div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Met à jour l'apparence des boutons de contrôle (actif / estompé sans barrer)
+ */
+function updateBarometerControlsUI(newMetric) {
+  const isAll = (newMetric === 'all');
+  const metrics = ['all', 'majeurs', 'global'];
+  metrics.forEach(m => {
+    const btn = document.getElementById(`btnBarometer-${m}`);
+    if (!btn) return;
+    btn.classList.remove('active', 'dimmed');
+    if (m === newMetric) {
+      btn.classList.add('active');
+    } else if (!isAll) {
+      btn.classList.add('dimmed');
+    }
+  });
+}
+
+/**
+ * Tracé initial ou complet du baromètre comparatif des groupes (DOM interactif avec accélération matérielle)
+ */
+function renderGroupsBarometerChart(groups) {
+  const container = document.getElementById('groupsBarometerContainer');
+  const rowsWrap = document.getElementById('barometerRowsWrap');
+  if (!container || !rowsWrap) return;
+
+  if (!groups || groups.length === 0) {
+    groups = getEnrichedAttendanceGroups();
+    if (!groups || groups.length === 0) return;
+  }
+
+  // 1. Initialiser les boutons de contrôle
+  renderGroupsBarometerControls();
+
+  // 2. Initialiser l'axe horizontal gradué
+  const axisConfig = getBarometerAxisConfig(activeGroupsBarometerMetric, groups);
+  renderGroupsBarometerAxis(axisConfig);
+
+  // 3. Déterminer l'ordre des rangées selon la métrique active
+  const sorted = [...groups];
+  if (activeGroupsBarometerMetric === 'global') {
+    sorted.sort((a, b) => b.taux_global - a.taux_global);
+  } else {
+    sorted.sort((a, b) => b.taux_majeurs - a.taux_majeurs);
+  }
+
+  const isSingle = (activeGroupsBarometerMetric !== 'all');
+
+  // Calibrer la hauteur totale du conteneur parent (positions absolues)
+  rowsWrap.style.height = `${sorted.length * BAROMETER_ROW_STEP}px`;
+
+  // 4. Génération des lignes de groupes
+  rowsWrap.innerHTML = sorted.map((g, rank) => {
+    const safeId = g.groupe.replace(/[^a-zA-Z0-9]/g, '_');
+    const partyColor = g.color || '#64748b';
+
+    const singleVal = (activeGroupsBarometerMetric === 'global') ? g.taux_global : g.taux_majeurs;
+    const singleWidth = Math.min(100, Math.max(1, (singleVal / axisConfig.max) * 100));
+    const isBadgeOutside = singleWidth < 14;
+
+    const majWidth = Math.min(100, Math.max(1, (g.taux_majeurs / axisConfig.max) * 100));
+    const globWidth = Math.min(100, Math.max(1, (g.taux_global / axisConfig.max) * 100));
+    const majOutside = majWidth < 14;
+    const globOutside = globWidth < 14;
+
+    return `
+      <div class="barometer-row ${isSingle ? 'is-single' : ''}" id="barometer-row-${safeId}" data-groupe="${g.groupe}" style="transform: translateY(${rank * BAROMETER_ROW_STEP}px);">
+        <div class="row-info" title="${g.groupe} (${g.totalDeps} députés)">
+          <span class="row-party-rank" id="barometer-rank-${safeId}">#${rank + 1}</span>
+          <span class="row-party-dot" style="background-color: ${partyColor};"></span>
+          <div class="row-party-text">
+            <strong class="row-party-abbr">${g.shortName}</strong>
+            <span class="row-party-full">${g.groupe}</span>
+          </div>
+        </div>
+        <div class="row-track">
+          <!-- 2 Barres comparatives côte à côte pour la vue d'ensemble (Bleu & Vert) -->
+          <div class="row-bars-dual" id="bars-dual-${safeId}">
+            <div class="dual-bar-item item-majeurs" onclick="setGroupsBarometerMetric('majeurs')" title="⭐ Textes Clés : ${g.taux_majeurs}% (Cliquer pour isoler)">
+              <span class="dual-bar-tag tag-blue">⭐ Clés</span>
+              <div class="dual-bar-track">
+                <div class="dual-bar-fill fill-blue ${majOutside ? 'val-outside' : ''}" style="width: ${majWidth}%;">
+                  <span class="dual-val">${g.taux_majeurs}%</span>
+                </div>
+              </div>
+            </div>
+            <div class="dual-bar-item item-global" onclick="setGroupsBarometerMetric('global')" title="🌐 Présence Globale : ${g.taux_global}% (Cliquer pour isoler)">
+              <span class="dual-bar-tag tag-green">🌐 Global</span>
+              <div class="dual-bar-track">
+                <div class="dual-bar-fill fill-green ${globOutside ? 'val-outside' : ''}" style="width: ${globWidth}%;">
+                  <span class="dual-val">${g.taux_global}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barre unique dédiée au morphing d'une métrique isolée (Couleur officielle du parti) -->
+          <div class="row-bar-single ${isBadgeOutside ? 'badge-outside' : ''}" id="bar-single-${safeId}" style="background-color: ${partyColor}; width: ${singleWidth}%;">
+            <span class="bar-val-badge" id="bar-badge-${safeId}">${singleVal}%</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/**
+ * Transition séquencée et ultra-fluide de l'histogramme des groupes
+ * - De 2 métriques vers 1 métrique : Éclosion de la couleur du parti (0ms) ➔ Glissement vertical (300ms)
+ * - De 1 métrique vers 2 métriques : Glissement vers Textes Clés (0ms) ➔ Éclosion des 2 barres bleu & vert (320ms)
+ * - Entre Textes Clés et Présence Globale : Morphing continu de largeur (100ms) ➔ Glissement vertical (400ms)
+ */
+function setGroupsBarometerMetric(newMetric) {
+  if (isBarometerAnimating) return;
+
+  // Toggle si on reclique sur la métrique isolée déjà active -> retour à 'all'
+  if (activeGroupsBarometerMetric === newMetric && newMetric !== 'all') {
+    newMetric = 'all';
+  }
+
+  const prevMetric = activeGroupsBarometerMetric;
+  activeGroupsBarometerMetric = newMetric;
+  isBarometerAnimating = true;
+
+  // 1. Immédiat (0ms) : Mise en valeur du bouton cliqué et estompage des autres (sans barrer)
+  updateBarometerControlsUI(newMetric);
+
+  const groups = getEnrichedAttendanceGroups();
+  if (!groups || groups.length === 0) {
+    isBarometerAnimating = false;
+    return;
+  }
+
+  const axisConfig = getBarometerAxisConfig(newMetric, groups);
+
+  // =========================================================================
+  // CAS A : RETOUR À LA VUE COMPARATIVE ("2 métriques" : Bleu & Vert)
+  // =========================================================================
+  if (newMetric === 'all') {
+    // 1. Morph préalable de la barre unique vers Textes Clés pour aligner les repères
+    groups.forEach(g => {
+      const safeId = g.groupe.replace(/[^a-zA-Z0-9]/g, '_');
+      const barSingle = document.getElementById(`bar-single-${safeId}`);
+      const badge = document.getElementById(`bar-badge-${safeId}`);
+      if (barSingle && badge) {
+        const widthPct = Math.min(100, Math.max(1, (g.taux_majeurs / axisConfig.max) * 100));
+        barSingle.style.width = `${widthPct}%`;
+        badge.textContent = `${g.taux_majeurs}%`;
+      }
+    });
+
+    // 2. Glissement immédiat des rangées vers l'ordre Textes Clés
+    const sorted = [...groups].sort((a, b) => b.taux_majeurs - a.taux_majeurs);
+    sorted.forEach((g, rank) => {
+      const safeId = g.groupe.replace(/[^a-zA-Z0-9]/g, '_');
+      const rowEl = document.getElementById(`barometer-row-${safeId}`);
+      const rankEl = document.getElementById(`barometer-rank-${safeId}`);
+      if (rowEl) rowEl.style.transform = `translateY(${rank * BAROMETER_ROW_STEP}px)`;
+      if (rankEl) rankEl.textContent = `#${rank + 1}`;
+    });
+
+    // 3. À 320ms (à mi-glissade) : fondu croisé fluide, la barre unique s'efface et les 2 barres bleu & vert fleurissent
+    setTimeout(() => {
+      groups.forEach(g => {
+        const safeId = g.groupe.replace(/[^a-zA-Z0-9]/g, '_');
+        const rowEl = document.getElementById(`barometer-row-${safeId}`);
+        if (rowEl) rowEl.classList.remove('is-single');
+      });
+
+      setTimeout(() => {
+        isBarometerAnimating = false;
+      }, 450);
+    }, 320);
+
+    return;
+  }
+
+  // =========================================================================
+  // CAS B : DE "2 MÉTRIQUES" VERS UNE MÉTRIQUE UNIQUE (majeurs ou global)
+  // =========================================================================
+  if (prevMetric === 'all') {
+    const targetKey = (newMetric === 'global') ? 'taux_global' : 'taux_majeurs';
+
+    // 1. Préréglage de la barre unique à la largeur exacte de la métrique ciblée et affichage fondu
+    groups.forEach(g => {
+      const safeId = g.groupe.replace(/[^a-zA-Z0-9]/g, '_');
+      const rowEl = document.getElementById(`barometer-row-${safeId}`);
+      const barSingle = document.getElementById(`bar-single-${safeId}`);
+      const badge = document.getElementById(`bar-badge-${safeId}`);
+
+      if (barSingle && badge) {
+        const val = g[targetKey];
+        const widthPct = Math.min(100, Math.max(1, (val / axisConfig.max) * 100));
+        barSingle.style.width = `${widthPct}%`;
+        barSingle.style.backgroundColor = g.color || '#64748b';
+        badge.textContent = `${val}%`;
+
+        if (widthPct < 14) {
+          barSingle.classList.add('badge-outside');
+        } else {
+          barSingle.classList.remove('badge-outside');
+        }
+      }
+
+      // Fondu croisé CSS doux : la barre unique s'épanouit tandis que les 2 barres s'effacent
+      if (rowEl) rowEl.classList.add('is-single');
+    });
+
+    // 2. À 300ms : glissement vertical physique des rangées complètes vers leur ordre décroissant
+    setTimeout(() => {
+      const sorted = [...groups];
+      if (newMetric === 'global') {
+        sorted.sort((a, b) => b.taux_global - a.taux_global);
+      } else {
+        sorted.sort((a, b) => b.taux_majeurs - a.taux_majeurs);
+      }
+
+      sorted.forEach((g, rank) => {
+        const safeId = g.groupe.replace(/[^a-zA-Z0-9]/g, '_');
+        const rowEl = document.getElementById(`barometer-row-${safeId}`);
+        const rankEl = document.getElementById(`barometer-rank-${safeId}`);
+        if (rowEl) rowEl.style.transform = `translateY(${rank * BAROMETER_ROW_STEP}px)`;
+        if (rankEl) rankEl.textContent = `#${rank + 1}`;
+      });
+
+      setTimeout(() => {
+        isBarometerAnimating = false;
+      }, 700);
+    }, 300);
+
+    return;
+  }
+
+  // =========================================================================
+  // CAS C : BASCULEMENT ENTRE LES DEUX MÉTRIQUES UNIQUES (de majeurs à global ou inverse)
+  // =========================================================================
+  // Étape 1 (100ms) : Morphing de largeur de la MÊME barre
+  setTimeout(() => {
+    groups.forEach(g => {
+      const safeId = g.groupe.replace(/[^a-zA-Z0-9]/g, '_');
+      const barSingle = document.getElementById(`bar-single-${safeId}`);
+      const badge = document.getElementById(`bar-badge-${safeId}`);
+
+      if (barSingle && badge) {
+        const val = (newMetric === 'global') ? g.taux_global : g.taux_majeurs;
+        const widthPct = Math.min(100, Math.max(1, (val / axisConfig.max) * 100));
+        barSingle.style.width = `${widthPct}%`;
+        badge.textContent = `${val}%`;
+
+        if (widthPct < 14) {
+          barSingle.classList.add('badge-outside');
+        } else {
+          barSingle.classList.remove('badge-outside');
+        }
+      }
+    });
+
+    // Étape 2 (400ms) : Glissement vertical physique de TOUTE la rangée (étiquette + barre)
+    setTimeout(() => {
+      const sorted = [...groups];
+      if (newMetric === 'global') {
+        sorted.sort((a, b) => b.taux_global - a.taux_global);
+      } else {
+        sorted.sort((a, b) => b.taux_majeurs - a.taux_majeurs);
+      }
+
+      sorted.forEach((g, rank) => {
+        const safeId = g.groupe.replace(/[^a-zA-Z0-9]/g, '_');
+        const rowEl = document.getElementById(`barometer-row-${safeId}`);
+        const rankEl = document.getElementById(`barometer-rank-${safeId}`);
+        if (rowEl) rowEl.style.transform = `translateY(${rank * BAROMETER_ROW_STEP}px)`;
+        if (rankEl) rankEl.textContent = `#${rank + 1}`;
+      });
+
+      setTimeout(() => {
+        isBarometerAnimating = false;
+      }, 700);
+
+    }, 300);
+
+  }, 100);
+}
+
+// Exposition globale pour les écouteurs onclick inline
+window.setGroupsBarometerMetric = setGroupsBarometerMetric;
+
+function renderGroupsBarometer() {
+  const groups = getEnrichedAttendanceGroups();
+  if (!groups || groups.length === 0) return;
+
+  // 1. Remplissage des 4 cartes de synthèse collective (KPIs)
+  const topMajeurs = groups.reduce((prev, curr) => (curr.taux_majeurs > prev.taux_majeurs ? curr : prev), groups[0]);
+  const topGlobal = groups.reduce((prev, curr) => (curr.taux_global > prev.taux_global ? curr : prev), groups[0]);
+  const topDelegation = groups.reduce((prev, curr) => (curr.taux_delegation > prev.taux_delegation ? curr : prev), groups[0]);
+  const topCiblage = groups.reduce((prev, curr) => (curr.ratioMajeurs > prev.ratioMajeurs ? curr : prev), groups[0]);
+
+  const kpisContainer = document.getElementById('groupsKpisRow');
+  if (kpisContainer) {
+    kpisContainer.innerHTML = `
+      <div class="kpi-card highlight-blue">
+        <div class="kpi-icon">⭐</div>
+        <div class="kpi-label">Top Mobilisation (Textes Majeurs)</div>
+        <div class="kpi-value">${topMajeurs.taux_majeurs}%</div>
+        <div class="kpi-sub">${topMajeurs.groupe} (${topMajeurs.totalDeps} élus)</div>
+      </div>
+      <div class="kpi-card highlight-green">
+        <div class="kpi-icon">🌐</div>
+        <div class="kpi-label">Plus forte présence globale</div>
+        <div class="kpi-value">${topGlobal.taux_global}%</div>
+        <div class="kpi-sub">
+          ${topGlobal.groupe}
+          <span class="kpi-sub-delegation">(dont ${topGlobal.taux_delegation}% par procuration)</span>
+        </div>
+      </div>
+      <div class="kpi-card highlight-amber">
+        <div class="kpi-icon">📋</div>
+        <div class="kpi-label">Plus fort recours à la procuration</div>
+        <div class="kpi-value">${topDelegation.taux_delegation}%</div>
+        <div class="kpi-sub">${topDelegation.groupe} (part des votes par délégation)</div>
+      </div>
+      <div class="kpi-card highlight-purple">
+        <div class="kpi-icon">🎯</div>
+        <div class="kpi-label">Plus fort ciblage stratégique</div>
+        <div class="kpi-value">×${topCiblage.ratioMajeurs.toFixed(2)}</div>
+        <div class="kpi-sub">${topCiblage.groupe} (+${topCiblage.ecartMajeurs} pts sur textes clés)</div>
+      </div>
+    `;
+  }
+
+  // 2. Tracé du baromètre comparatif interactif (DOM FLIP)
+  renderGroupsBarometerChart(groups);
+
+  // 3. Tableau comparatif des groupes
+  renderGroupsBarometerTable(groups);
 }
 
 /* =========================================================================
@@ -507,52 +960,21 @@ function renderQuadrantChart() {
   if (quadrantChartInstance) quadrantChartInstance.destroy();
 
   const currentDeps = getAttendanceDeputes();
-  const { median_global: medianX, median_majeur: medianY } = computeAttendanceMedians(currentDeps);
+  const medians = computeAttendanceMedians(currentDeps);
 
-  // Filtrer les données selon le groupe sélectionné
+  // Filtrer les données selon le groupe et le profil (quadrant) sélectionnés
   let filteredDeputes = currentDeps;
   if (deputoscopeFilters.group !== 'ALL') {
     filteredDeputes = filteredDeputes.filter(d => d.groupe === deputoscopeFilters.group);
   }
-
-  // Échelle par morceaux ancrée sur les quantiles statistiques :
-  // 0 -> 25% de la longueur de l'axe : de minVal à Q1
-  // 25% -> 50% de la longueur de l'axe : de Q1 à Médiane
-  // 50% -> 100% de la longueur de l'axe : de Médiane à maxVal
-  function createQuantileScale(minVal, q1Val, medVal, maxVal) {
-    const min = Math.max(0, minVal);
-    const q1 = Math.max(min + 0.1, q1Val);
-    const med = Math.max(q1 + 0.1, medVal);
-    const max = Math.max(med + 0.1, maxVal);
-
-    function forward(v) {
-      if (v <= min) return 0;
-      if (v >= max) return 1;
-      if (v <= q1) {
-        return 0.25 * ((v - min) / (q1 - min));
-      } else if (v <= med) {
-        return 0.25 + 0.25 * ((v - q1) / (med - q1));
-      } else {
-        return 0.50 + 0.50 * ((v - med) / (max - med));
-      }
-    }
-
-    function inverse(u) {
-      if (u <= 0) return min;
-      if (u >= 1) return max;
-      if (u <= 0.25) {
-        return min + (u / 0.25) * (q1 - min);
-      } else if (u <= 0.50) {
-        return q1 + ((u - 0.25) / 0.25) * (med - q1);
-      } else {
-        return med + ((u - 0.50) / 0.50) * (max - med);
-      }
-    }
-
-    return { min, q1, med, max, forward, inverse };
+  if (deputoscopeFilters.quadrant !== 'ALL') {
+    const targetQ = (deputoscopeFilters.quadrant === 'Fantôme' || deputoscopeFilters.quadrant === 'Fantome' || deputoscopeFilters.quadrant === 'Décrochage')
+      ? ['Fantôme', 'Fantome', 'Décrochage']
+      : [deputoscopeFilters.quadrant];
+    filteredDeputes = filteredDeputes.filter(d => targetQ.includes(d.quadrant));
   }
 
-  // Calcul des bornes réelles pour X (textes majeurs) et Y (présence globale)
+  // Calcul des bornes réelles (% mini - 3% à % max + 3%)
   const allMajeurs = currentDeps.map(d => d.taux_majeurs);
   const allGlobal = currentDeps.map(d => d.taux_global);
   const minMajeurs = allMajeurs.length ? Math.min(...allMajeurs) : 0;
@@ -560,11 +982,39 @@ function renderQuadrantChart() {
   const minGlobal = allGlobal.length ? Math.min(...allGlobal) : 0;
   const maxGlobal = allGlobal.length ? Math.max(...allGlobal) : 100;
 
-  const medians = computeAttendanceMedians(currentDeps);
-  const scaleX = createQuantileScale(minMajeurs, medians.q1_majeur, medians.median_majeur, maxMajeurs);
-  const scaleY = createQuantileScale(minGlobal, medians.q1_global, medians.median_global, maxGlobal);
+  // Échelle centrée sur la médiane à 50% de l'axe, bornée de (min - 3%) à (max + 3%)
+  function createMedianCenteredScale(minVal, medVal, maxVal) {
+    const minAxis = Math.round((minVal - 3) * 10) / 10;
+    const maxAxis = Math.round((maxVal + 3) * 10) / 10;
+    const med = medVal;
 
-  // Préparer les points pour le scatter plot (Axe X = Textes Majeurs projeté, Axe Y = Présence Globale projeté)
+    function forward(v) {
+      if (v <= minAxis) return 0;
+      if (v >= maxAxis) return 1;
+      if (v <= med) {
+        return 0.50 * ((v - minAxis) / (med - minAxis));
+      } else {
+        return 0.50 + 0.50 * ((v - med) / (maxAxis - med));
+      }
+    }
+
+    function inverse(u) {
+      if (u <= 0) return minAxis;
+      if (u >= 1) return maxAxis;
+      if (u <= 0.50) {
+        return minAxis + (u / 0.50) * (med - minAxis);
+      } else {
+        return med + ((u - 0.50) / 0.50) * (maxAxis - med);
+      }
+    }
+
+    return { minVal, maxVal, minAxis, maxAxis, med, forward, inverse };
+  }
+
+  const scaleX = createMedianCenteredScale(minMajeurs, medians.median_majeur, maxMajeurs);
+  const scaleY = createMedianCenteredScale(minGlobal, medians.median_global, maxGlobal);
+
+  // Préparer les points pour le scatter plot projetés sur l'axe centré sur la médiane
   const points = filteredDeputes.map(d => {
     const color = (typeof getGroupColor === 'function') ? getGroupColor(d.groupe) : '#94a3b8';
     return {
@@ -577,27 +1027,195 @@ function renderQuadrantChart() {
     };
   });
 
-  // Graduations affichées : 0%, Q1 (à 25%), Médiane (à 50%), repère intermédiaire 75%, Max (à 100%)
+  // Graduations des axes : min -3%, 25%, Médiane (50%), 75%, max +3%
   const ticksX = [
-    { pos: 0.0, label: `${Math.round(scaleX.min)}% (Min)` },
-    { pos: 0.25, label: `Q1 : ${scaleX.q1}%` },
+    { pos: 0.0, label: `${Math.round(scaleX.minAxis)}%` },
+    { pos: 0.25, label: `${Math.round(scaleX.inverse(0.25))}%` },
     { pos: 0.50, label: `Médiane : ${scaleX.med}%` },
     { pos: 0.75, label: `${Math.round(scaleX.inverse(0.75))}%` },
-    { pos: 1.0, label: `${Math.round(scaleX.max)}% (Max)` }
+    { pos: 1.0, label: `${Math.round(scaleX.maxAxis)}%` }
   ];
 
   const ticksY = [
-    { pos: 0.0, label: `${Math.round(scaleY.min)}% (Min)` },
-    { pos: 0.25, label: `Q1 : ${scaleY.q1}%` },
+    { pos: 0.0, label: `${Math.round(scaleY.minAxis)}%` },
+    { pos: 0.25, label: `${Math.round(scaleY.inverse(0.25))}%` },
     { pos: 0.50, label: `Médiane : ${scaleY.med}%` },
     { pos: 0.75, label: `${Math.round(scaleY.inverse(0.75))}%` },
-    { pos: 1.0, label: `${Math.round(scaleY.max)}% (Max)` }
+    { pos: 1.0, label: `${Math.round(scaleY.maxAxis)}%` }
   ];
+
+  // Mise à jour dynamique des repères statistiques dans la légende
+  const bmMed = document.getElementById('benchmarkMedianeText');
+  if (bmMed) {
+    bmMed.innerHTML = `Majeurs <strong>${medians.median_majeur}%</strong> • Global <strong>${medians.median_global}%</strong>`;
+  }
+  const bmQuart = document.getElementById('benchmarkQuartilesText');
+  if (bmQuart) {
+    bmQuart.innerHTML = `Q1 : <strong>${medians.q1_majeur}%</strong> / <strong>${medians.q1_global}%</strong> • Q3 : <strong>${medians.q3_majeur}%</strong> / <strong>${medians.q3_global}%</strong>`;
+  }
+
+  // Mise à jour des compteurs sur les boutons de profils
+  const qCounts = {
+    ALL: currentDeps.length,
+    Pilier: currentDeps.filter(d => d.quadrant === 'Pilier').length,
+    Fantome: currentDeps.filter(d => d.quadrant === 'Fantôme' || d.quadrant === 'Fantome').length,
+    Standard: currentDeps.filter(d => d.quadrant === 'Standard').length
+  };
+  const countALL = document.getElementById('qCountALL');
+  if (countALL) countALL.textContent = qCounts.ALL;
+  const countPilier = document.getElementById('qCountPilier');
+  if (countPilier) countPilier.textContent = qCounts.Pilier;
+  const countFantome = document.getElementById('qCountFantome');
+  if (countFantome) countFantome.textContent = qCounts.Fantome;
+  const countStandard = document.getElementById('qCountStandard');
+  if (countStandard) countStandard.textContent = qCounts.Standard;
+
+  updateQuadrantLegendActivePill();
 
   if (typeof Chart === 'undefined') {
     console.warn("Chart.js n'est pas disponible.");
     return;
   }
+
+  // Plugin de traçage des médianes (bleu continu à 50%), quartiles Q1 & Q3 (violet en tiret) et zones
+  const quadrantLinesPlugin = {
+    id: 'quadrantLinesPlugin',
+    beforeDatasetsDraw(chart) {
+      const { ctx, chartArea, scales: { x, y } } = chart;
+      if (!chartArea || !x || !y) return;
+      const { top, bottom, left, right } = chartArea;
+
+      // Médiane ancrée exactement à 50% des axes
+      const xMed = x.getPixelForValue(0.50);
+      const yMed = y.getPixelForValue(0.50);
+
+      // Quartiles proportionnels (non figés sur 1/4)
+      const xQ1 = x.getPixelForValue(scaleX.forward(medians.q1_majeur));
+      const yQ1 = y.getPixelForValue(scaleY.forward(medians.q1_global));
+      const xQ3 = x.getPixelForValue(scaleX.forward(medians.q3_majeur));
+      const yQ3 = y.getPixelForValue(scaleY.forward(medians.q3_global));
+
+      ctx.save();
+
+      // 1. Coloration uniquement des deux zones de profils extrêmes (délimitées par les quartiles)
+      // Zone Piliers : supérieur droit au-delà de Q3 sur les deux axes (> Q3 Majeurs & > Q3 Global)
+      if (xQ3 <= right && yQ3 >= top) {
+        ctx.fillStyle = 'rgba(240, 253, 244, 0.65)';
+        ctx.fillRect(xQ3, top, right - xQ3, yQ3 - top);
+      }
+
+      // Zone Décrochage : inférieur gauche en deçà de Q1 sur les deux axes (< Q1 Majeurs & < Q1 Global)
+      if (xQ1 >= left && yQ1 <= bottom) {
+        ctx.fillStyle = 'rgba(254, 242, 242, 0.65)';
+        ctx.fillRect(left, yQ1, xQ1 - left, bottom - yQ1);
+      }
+
+      // 2. Filigranes discrets dans les deux zones de profils
+      ctx.font = '700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textBaseline = 'middle';
+
+      // Piliers (Haut-Droit)
+      ctx.fillStyle = 'rgba(22, 101, 52, 0.65)';
+      ctx.textAlign = 'right';
+      ctx.fillText('🏛️ PILIERS', right - 12, top + 18);
+
+      // Décrochage (Bas-Gauche)
+      ctx.fillStyle = 'rgba(153, 27, 27, 0.65)';
+      ctx.textAlign = 'left';
+      ctx.fillText('👻 DÉCROCHAGE', left + 12, bottom - 18);
+
+      // 3. Quartiles Q1 et Q3 : violet en tiret
+      ctx.strokeStyle = 'rgba(124, 58, 237, 0.85)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+
+      // Quartiles verticaux (X - Textes Majeurs)
+      [xQ1, xQ3].forEach(xv => {
+        if (xv >= left && xv <= right) {
+          ctx.beginPath();
+          ctx.moveTo(xv, top);
+          ctx.lineTo(xv, bottom);
+          ctx.stroke();
+        }
+      });
+
+      // Quartiles horizontaux (Y - Présence Globale)
+      [yQ1, yQ3].forEach(yv => {
+        if (yv >= top && yv <= bottom) {
+          ctx.beginPath();
+          ctx.moveTo(left, yv);
+          ctx.lineTo(right, yv);
+          ctx.stroke();
+        }
+      });
+
+      // 4. Médiane : bleu continu à 50%
+      ctx.strokeStyle = 'rgba(37, 99, 235, 0.95)';
+      ctx.lineWidth = 2.2;
+      ctx.setLineDash([]); // continu
+
+      // Médiane verticale (X)
+      if (xMed >= left && xMed <= right) {
+        ctx.beginPath();
+        ctx.moveTo(xMed, top);
+        ctx.lineTo(xMed, bottom);
+        ctx.stroke();
+      }
+
+      // Médiane horizontale (Y)
+      if (yMed >= top && yMed <= bottom) {
+        ctx.beginPath();
+        ctx.moveTo(left, yMed);
+        ctx.lineTo(right, yMed);
+        ctx.stroke();
+      }
+
+      // 5. Badges statistiques clairs le long des axes
+      function drawTag(text, px, py, bg, fg, alignX, alignY) {
+        ctx.save();
+        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const w = ctx.measureText(text).width + 12;
+        const h = 18;
+        let bx = px;
+        let by = py;
+
+        if (alignX === 'center') bx = px - w / 2;
+        else if (alignX === 'right') bx = px - w;
+        else if (alignX === 'left') bx = px;
+
+        if (alignY === 'bottom') by = py - h;
+        else if (alignY === 'top') by = py;
+        else if (alignY === 'middle') by = py - h / 2;
+
+        bx = Math.max(left + 2, Math.min(right - w - 2, bx));
+        by = Math.max(top + 2, Math.min(bottom - h - 2, by));
+
+        ctx.fillStyle = bg;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx, by, w, h, 4);
+        else ctx.rect(bx, by, w, h);
+        ctx.fill();
+
+        ctx.fillStyle = fg;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, bx + w / 2, by + h / 2);
+        ctx.restore();
+      }
+
+      // Badges Médiane (bleu continu)
+      drawTag(`Médiane ${medians.median_majeur}%`, xMed, bottom - 6, '#2563eb', '#ffffff', 'center', 'bottom');
+      drawTag(`Médiane ${medians.median_global}%`, left + 6, yMed, '#2563eb', '#ffffff', 'left', 'middle');
+
+      // Badges Quartiles (violet tiret)
+      drawTag(`Q1 ${medians.q1_majeur}%`, xQ1, top + 6, '#7c3aed', '#ffffff', 'center', 'top');
+      drawTag(`Q3 ${medians.q3_majeur}%`, xQ3, top + 6, '#7c3aed', '#ffffff', 'center', 'top');
+      drawTag(`Q1 ${medians.q1_global}%`, right - 6, yQ1, '#7c3aed', '#ffffff', 'right', 'middle');
+      drawTag(`Q3 ${medians.q3_global}%`, right - 6, yQ3, '#7c3aed', '#ffffff', 'right', 'middle');
+
+      ctx.restore();
+    }
+  };
 
   quadrantChartInstance = new Chart(ctx, {
     type: 'scatter',
@@ -624,21 +1242,21 @@ function renderQuadrantChart() {
         if (elements.length > 0) {
           const index = elements[0].index;
           const dep = points[index].deputy;
-          selectDeputy(dep);
+          selectDeputy(dep, true);
         }
       },
       scales: {
         x: {
-          min: -0.03,
-          max: 1.03,
+          min: 0,
+          max: 1,
           afterBuildTicks: axis => {
             axis.ticks = ticksX.map(t => ({ value: t.pos, label: t.label }));
           },
           title: {
             display: true,
-            text: `Présence Textes Majeurs (%) — [Q1 : 25% de l'axe = ${scaleX.q1}%, Médiane : 50% = ${scaleX.med}%]`,
-            color: '#94a3b8',
-            font: { size: 12, weight: '600' }
+            text: `Présence Textes Majeurs (%) — Médiane : ${scaleX.med}%`,
+            color: '#475569',
+            font: { size: 12, weight: '700' }
           },
           ticks: {
             color: '#64748b',
@@ -651,31 +1269,23 @@ function renderQuadrantChart() {
           grid: {
             color: context => {
               const val = context.tick ? context.tick.value : null;
-              if (val !== null && Math.abs(val - 0.50) < 0.01) return 'rgba(59, 130, 246, 0.75)'; // Ligne Médiane
-              if (val !== null && Math.abs(val - 0.25) < 0.01) return 'rgba(124, 58, 237, 0.6)';  // Ligne Q1
-              return 'rgba(255, 255, 255, 0.06)';
+              if (val !== null && Math.abs(val - 0.50) < 0.01) return 'rgba(37, 99, 235, 0.4)';
+              return 'rgba(226, 232, 240, 0.6)';
             },
-            lineWidth: context => {
-              const val = context.tick ? context.tick.value : null;
-              return (val !== null && (Math.abs(val - 0.50) < 0.01 || Math.abs(val - 0.25) < 0.01)) ? 2 : 1;
-            },
-            borderDash: context => {
-              const val = context.tick ? context.tick.value : null;
-              return (val !== null && Math.abs(val - 0.25) < 0.01) ? [5, 4] : undefined;
-            }
+            lineWidth: 1
           }
         },
         y: {
-          min: -0.03,
-          max: 1.03,
+          min: 0,
+          max: 1,
           afterBuildTicks: axis => {
             axis.ticks = ticksY.map(t => ({ value: t.pos, label: t.label }));
           },
           title: {
             display: true,
-            text: `Présence Globale (%) — [Q1 : 25% de l'axe = ${scaleY.q1}%, Médiane : 50% = ${scaleY.med}%]`,
-            color: '#94a3b8',
-            font: { size: 12, weight: '600' }
+            text: `Présence Globale (%) — Médiane : ${scaleY.med}%`,
+            color: '#475569',
+            font: { size: 12, weight: '700' }
           },
           ticks: {
             color: '#64748b',
@@ -688,18 +1298,10 @@ function renderQuadrantChart() {
           grid: {
             color: context => {
               const val = context.tick ? context.tick.value : null;
-              if (val !== null && Math.abs(val - 0.50) < 0.01) return 'rgba(59, 130, 246, 0.75)'; // Ligne Médiane
-              if (val !== null && Math.abs(val - 0.25) < 0.01) return 'rgba(124, 58, 237, 0.6)';  // Ligne Q1
-              return 'rgba(255, 255, 255, 0.06)';
+              if (val !== null && Math.abs(val - 0.50) < 0.01) return 'rgba(37, 99, 235, 0.4)';
+              return 'rgba(226, 232, 240, 0.6)';
             },
-            lineWidth: context => {
-              const val = context.tick ? context.tick.value : null;
-              return (val !== null && (Math.abs(val - 0.50) < 0.01 || Math.abs(val - 0.25) < 0.01)) ? 2 : 1;
-            },
-            borderDash: context => {
-              const val = context.tick ? context.tick.value : null;
-              return (val !== null && Math.abs(val - 0.25) < 0.01) ? [5, 4] : undefined;
-            }
+            lineWidth: 1
           }
         }
       },
@@ -757,7 +1359,205 @@ function renderQuadrantChart() {
           }
         }
       }
+    },
+    plugins: [quadrantLinesPlugin]
+  });
+
+  // Mise à jour de la mini-grille responsive de décompte par parti (Option 3)
+  renderQuadrantPartyBreakdown();
+}
+
+/**
+ * Rendu de la mini-grille responsive de décompte par parti politique (Option 3)
+ * Présente le baromètre des effectifs de chaque groupe au sein du profil sélectionné.
+ * Trié par % décroissant pour refléter fidèlement le poids relatif (ex: 3/10 > 6/50).
+ */
+function renderQuadrantPartyBreakdown() {
+  const container = document.getElementById('quadrantPartyBreakdown');
+  if (!container) return;
+
+  const activeQ = deputoscopeFilters.quadrant;
+  // Ne pas afficher si "Tous les députés" est sélectionné
+  if (!activeQ || activeQ === 'ALL') {
+    container.style.display = 'none';
+    return;
+  }
+
+  const currentDeps = getAttendanceDeputes();
+  if (!currentDeps || currentDeps.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  // 1. Calcul des effectifs totaux par parti sur la cohorte analysée
+  const groupTotals = {};
+  currentDeps.forEach(d => {
+    if (d.groupe) {
+      groupTotals[d.groupe] = (groupTotals[d.groupe] || 0) + 1;
     }
+  });
+
+  // 2. Définition du filtre selon le profil actif
+  const isTargetProfile = (d) => {
+    if (activeQ === 'Pilier') {
+      return d.quadrant === 'Pilier';
+    }
+    if (activeQ === 'Fantôme' || activeQ === 'Fantome' || activeQ === 'Décrochage') {
+      return d.quadrant === 'Fantôme' || d.quadrant === 'Fantome' || d.quadrant === 'Décrochage';
+    }
+    if (activeQ === 'Standard') {
+      return d.quadrant === 'Standard';
+    }
+    return false;
+  };
+
+  const profileDeps = currentDeps.filter(isTargetProfile);
+
+  // 3. Décompte des députés du profil par parti
+  const groupProfileCounts = {};
+  profileDeps.forEach(d => {
+    if (d.groupe) {
+      groupProfileCounts[d.groupe] = (groupProfileCounts[d.groupe] || 0) + 1;
+    }
+  });
+
+  // 4. Configuration des titres et badges du profil
+  const titleEl = document.getElementById('breakdownTitle');
+  const badgeEl = document.getElementById('breakdownTotalBadge');
+  const subtitleEl = document.getElementById('breakdownSubtitle');
+
+  let profileLabel = 'Profil';
+  let profileIcon = '📊';
+  if (activeQ === 'Pilier') {
+    profileLabel = 'Piliers';
+    profileIcon = '🏛️';
+  } else if (activeQ === 'Fantôme' || activeQ === 'Fantome' || activeQ === 'Décrochage') {
+    profileLabel = 'Décrochage';
+    profileIcon = '👻';
+  } else if (activeQ === 'Standard') {
+    profileLabel = 'Activité Régulière';
+    profileIcon = '👤';
+  }
+
+  if (titleEl) {
+    titleEl.textContent = `${profileIcon} Répartition par groupe politique (${profileLabel})`;
+  }
+  if (badgeEl) {
+    const globalPct = Math.round((profileDeps.length / currentDeps.length) * 100);
+    badgeEl.textContent = `${profileDeps.length} députés (${globalPct}% de l'Assemblée)`;
+  }
+  if (subtitleEl) {
+    subtitleEl.textContent = `Part des effectifs de chaque groupe au sein du profil "${profileLabel}" (triée par proportion relative décroissante) :`;
+  }
+
+  // 5. Tableau statistique par groupe avec tri par % décroissant
+  const stats = Object.keys(groupTotals).map(g => {
+    const count = groupProfileCounts[g] || 0;
+    const total = groupTotals[g] || 0;
+    const pct = total > 0 ? (count / total) * 100 : 0;
+    const shortName = (typeof GROUP_SHORT_NAMES !== 'undefined' && GROUP_SHORT_NAMES[g]) || g;
+    const color = (typeof getGroupColor === 'function') ? getGroupColor(g) : '#64748b';
+    return {
+      group: g,
+      shortName,
+      color,
+      count,
+      total,
+      pct
+    };
+  });
+
+  // Tri impératif : % décroissant (ex: 30% > 12%), puis nombre absolu, puis alphabétique
+  stats.sort((a, b) => {
+    if (Math.abs(b.pct - a.pct) > 0.001) {
+      return b.pct - a.pct;
+    }
+    if (b.count !== a.count) {
+      return b.count - a.count;
+    }
+    return a.shortName.localeCompare(b.shortName);
+  });
+
+  // 6. Rendu des cartes de la grille
+  const gridEl = document.getElementById('breakdownGrid');
+  if (!gridEl) return;
+
+  const currentActiveGroup = deputoscopeFilters.group || 'ALL';
+
+  gridEl.innerHTML = stats.map(s => {
+    const isSelected = (currentActiveGroup === s.group);
+    // Format du pourcentage : 1 décimale si non entier, sinon entier
+    const pctDisplay = (s.pct % 1 === 0) ? s.pct.toFixed(0) : s.pct.toFixed(1);
+    const safeGroupName = (s.group || '').replace(/'/g, "\\'");
+
+    return `
+      <div class="breakdown-card ${isSelected ? 'selected' : ''} ${s.count === 0 ? 'card-zero' : ''}"
+           onclick="toggleQuadrantBreakdownGroup('${safeGroupName}')"
+           role="button"
+           tabindex="0"
+           title="${s.group} : ${s.count} sur ${s.total} députés (${pctDisplay}%). Cliquez pour filtrer la liste des députés.">
+        <div class="card-top">
+          <div class="card-group-identity">
+            <span class="group-dot" style="background-color: ${s.color};"></span>
+            <span class="group-short-name">${s.shortName}</span>
+          </div>
+          <span class="card-pct" style="color: ${s.color};">${pctDisplay}%</span>
+        </div>
+        <div class="card-bar-track">
+          <div class="card-bar-fill" style="width: ${Math.min(100, Math.max(0, s.pct))}%; background-color: ${s.color};"></div>
+        </div>
+        <div class="card-bottom">
+          <span class="card-ratio"><strong>${s.count}</strong> sur ${s.total} élus</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.style.display = 'flex';
+}
+
+/**
+ * Filtre interactif au clic sur une carte de parti dans le baromètre
+ */
+function toggleQuadrantBreakdownGroup(groupName) {
+  const groupSelect = document.getElementById('deputoscopeGroupSelect');
+  if (deputoscopeFilters.group === groupName) {
+    // Si déjà actif, on désélectionne (revient à Tous les groupes)
+    deputoscopeFilters.group = 'ALL';
+    if (groupSelect) groupSelect.value = 'ALL';
+  } else {
+    // Sélectionner ce groupe
+    deputoscopeFilters.group = groupName;
+    if (groupSelect) groupSelect.value = groupName;
+  }
+
+  // Mettre à jour le scatter plot, les repères et la liste des députés
+  updateQuadrantLegendActivePill();
+  renderQuadrantChart();
+  applyDeputoscopeFilters();
+}
+
+/**
+ * Filtrage interactif par quadrant depuis les boutons de la légende
+ */
+function setQuadrantFilter(quadrant) {
+  const quadrantSelect = document.getElementById('deputoscopeQuadrantSelect');
+  if (quadrantSelect) {
+    quadrantSelect.value = quadrant;
+  }
+  deputoscopeFilters.quadrant = quadrant;
+  updateQuadrantLegendActivePill();
+  renderQuadrantChart();
+  applyDeputoscopeFilters();
+}
+
+/**
+ * Synchronise l'état actif des boutons de la légende
+ */
+function updateQuadrantLegendActivePill() {
+  const activeQ = deputoscopeFilters.quadrant || 'ALL';
+  document.querySelectorAll('.q-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.quadrant === activeQ);
   });
 }
 
@@ -771,6 +1571,8 @@ function onDeputoscopeFilterChange() {
   deputoscopeFilters.group = groupSelect?.value || 'ALL';
   deputoscopeFilters.quadrant = quadrantSelect?.value || 'ALL';
   deputoscopeFilters.sort = sortSelect?.value || 'majeurs_desc';
+
+  updateQuadrantLegendActivePill();
 
   // Réactualiser le scatter plot
   renderQuadrantChart();
@@ -803,7 +1605,10 @@ function applyDeputoscopeFilters() {
 
   // Filtre quadrant
   if (deputoscopeFilters.quadrant !== 'ALL') {
-    list = list.filter(d => d.quadrant === deputoscopeFilters.quadrant);
+    const targetQ = (deputoscopeFilters.quadrant === 'Fantôme' || deputoscopeFilters.quadrant === 'Fantome' || deputoscopeFilters.quadrant === 'Décrochage')
+      ? ['Fantôme', 'Fantome', 'Décrochage']
+      : [deputoscopeFilters.quadrant];
+    list = list.filter(d => targetQ.includes(d.quadrant));
   }
 
   // Tri
@@ -1026,16 +1831,97 @@ function renderDeputyDetailCard(dep) {
    VUE 3 : LES SCRUTINS AU COUTEAU (L'ABSENCE QUI FAIT BASCULER LA LOI)
    ========================================================================= */
 
+/**
+ * Change le tri actif pour les scrutins au couteau ('date' ou 'diff')
+ */
+function setCouteauSort(sortKey) {
+  if (sortKey !== 'date' && sortKey !== 'diff') return;
+  currentCouteauSort = sortKey;
+
+  // Mise à jour de l'état visuel des boutons de la toggle pill
+  document.querySelectorAll('.couteau-pill-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.sort === sortKey);
+  });
+
+  // Synchronisation avec le routeur URL
+  if (typeof DeepLinkRouter !== 'undefined' && !DeepLinkRouter.isRoutingInProgress && (typeof currentActiveTab !== 'undefined' && currentActiveTab === 'tab-attendance')) {
+    DeepLinkRouter.setParams({ couteau_sort: sortKey === 'date' ? null : sortKey });
+  }
+
+  // Re-rendre la liste des scrutins au couteau
+  renderCloseVotes();
+}
+window.setCouteauSort = setCouteauSort;
+
 function renderCloseVotes() {
   if (!attendanceData || !attendanceData.scrutins_couteau) return;
 
   const container = document.getElementById('closeVotesList');
   if (!container) return;
 
-  let list = attendanceData.scrutins_couteau;
+  let list = [...attendanceData.scrutins_couteau];
   if (currentAttendanceLeg !== 'ALL') {
     list = list.filter(s => String(s.legislature) === String(currentAttendanceLeg));
   }
+
+  // Tri des scrutins selon l'option choisie
+  if (currentCouteauSort === 'diff') {
+    list.sort((a, b) => {
+      // 1. Écart de voix croissant (les plus serrés d'abord : 1 voix, 2 voix...)
+      const diffA = Number(a.diff) || 0;
+      const diffB = Number(b.diff) || 0;
+      if (diffA !== diffB) {
+        return diffA - diffB;
+      }
+      // 2. Si même nombre d'écart de voix, trier pour nombre de voix totale (+votant en premier)
+      const votantsA = (a.votants != null) ? Number(a.votants) : ((Number(a.pour) || 0) + (Number(a.contre) || 0) + (Number(a.abstentions) || 0));
+      const votantsB = (b.votants != null) ? Number(b.votants) : ((Number(b.pour) || 0) + (Number(b.contre) || 0) + (Number(b.abstentions) || 0));
+      if (votantsA !== votantsB) {
+        return votantsB - votantsA;
+      }
+      // 3. Départage par date (plus récent d'abord)
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+      return (Number(b.id) || 0) - (Number(a.id) || 0);
+    });
+  } else {
+    // Par date (plus récent d'abord)
+    list.sort((a, b) => {
+      // 1. Date décroissante (plus récent d'abord)
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+      // 2. Si même date : plus petit écart en premier
+      const diffA = Number(a.diff) || 0;
+      const diffB = Number(b.diff) || 0;
+      if (diffA !== diffB) {
+        return diffA - diffB;
+      }
+      // 3. Si même écart : plus de votants en premier
+      const votantsA = (a.votants != null) ? Number(a.votants) : ((Number(a.pour) || 0) + (Number(a.contre) || 0) + (Number(a.abstentions) || 0));
+      const votantsB = (b.votants != null) ? Number(b.votants) : ((Number(b.pour) || 0) + (Number(b.contre) || 0) + (Number(b.abstentions) || 0));
+      if (votantsA !== votantsB) {
+        return votantsB - votantsA;
+      }
+      return (Number(b.id) || 0) - (Number(a.id) || 0);
+    });
+  }
+
+  // Mise à jour du badge de comptage des scrutins
+  const countBadge = document.getElementById('couteauCountBadge');
+  if (countBadge) {
+    countBadge.textContent = `${list.length} scrutin${list.length > 1 ? 's' : ''}`;
+  }
+
+  // Mise à jour de l'état visuel des boutons de la toggle pill
+  document.querySelectorAll('.couteau-pill-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.sort === currentCouteauSort);
+  });
 
   if (list.length === 0) {
     container.innerHTML = `
@@ -1057,6 +1943,7 @@ function renderCloseVotes() {
     const totalExprimes = (s.pour + s.contre) || 1;
     const pourPct = Math.round((s.pour / totalExprimes) * 100);
     const contrePct = 100 - pourPct;
+    const votantsCount = (s.votants != null) ? s.votants : ((s.pour || 0) + (s.contre || 0) + (s.abstentions || 0));
 
     // Barres de répartition avec distinction gris pour motion de censure
     const contreClass = isCensure ? 'breakdown-bar-contre censure-bar' : 'breakdown-bar-contre';
@@ -1102,6 +1989,7 @@ function renderCloseVotes() {
           <div class="razor-vote-meta">
             <span class="badge ${sortBadge}">${sortText}</span>
             <span class="razor-diff-badge">⚡ ${diffText}</span>
+            <span class="razor-votants-badge" title="Nombre total de votants">👥 ${votantsCount} votants</span>
             <span class="razor-date">📅 ${s.date} • ${s.legislature}ᵉ Législature</span>
             ${s.majeur ? '<span class="scope-pill-btn active" style="font-size: 11px; padding: 2px 6px;">⭐ Texte Majeur</span>' : ''}
             ${isCensure ? '<span class="scope-pill-btn active" style="font-size: 11px; padding: 2px 6px; background: #64748b; color: #fff;">⚖️ 49.3 Censure</span>' : ''}
@@ -1182,4 +2070,16 @@ function shareDeputyAttendance(depId) {
     alert(`Fiche d'assiduité de ${dep.nom} :\nTextes Majeurs : ${dep.taux_majeurs}%\nPrésence Globale : ${dep.taux_global}%\nProfil : ${dep.quadrant}`);
   }
 }
+
+// Exposition globale pour les interactions HTML
+if (typeof window !== 'undefined') {
+  window.setQuadrantFilter = setQuadrantFilter;
+  window.updateQuadrantLegendActivePill = updateQuadrantLegendActivePill;
+  window.renderQuadrantPartyBreakdown = renderQuadrantPartyBreakdown;
+  window.toggleQuadrantBreakdownGroup = toggleQuadrantBreakdownGroup;
+  window.jumpToDeputoscopeGroup = jumpToDeputoscopeGroup;
+  window.setGroupsTableSort = setGroupsTableSort;
+}
+
+
 

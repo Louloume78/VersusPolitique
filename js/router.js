@@ -311,8 +311,12 @@ const DeepLinkRouter = {
     const deputeId = params.get('depute');
     const deputeSearch = params.get('q_dep');
     const quadrant = params.get('quadrant');
+    const couteauSort = params.get('couteau_sort');
 
     if (targetTab === 'tab-attendance') {
+      if (couteauSort && (couteauSort === 'diff' || couteauSort === 'date')) {
+        if (typeof currentCouteauSort !== 'undefined') currentCouteauSort = couteauSort;
+      }
       if (subview && typeof switchAttendanceSubView === 'function') {
         switchAttendanceSubView(subview);
       }
@@ -325,6 +329,7 @@ const DeepLinkRouter = {
         const qSelect = document.getElementById('deputoscopeQuadrantSelect');
         if (qSelect) qSelect.value = quadrant;
         if (typeof deputoscopeFilters !== 'undefined') deputoscopeFilters.quadrant = quadrant;
+        if (typeof updateQuadrantLegendActivePill === 'function') updateQuadrantLegendActivePill();
       }
       if (deputeId && typeof selectDeputyById === 'function') {
         selectDeputyById(deputeId);
