@@ -1239,6 +1239,16 @@
         </div>
       </div>
 
+      <div style="margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+        <h4 style="margin: 0 0 0.4rem 0; font-size: 1rem; color: #0f172a;">📊 Mesure d'audience respectueuse (Umami Analytics)</h4>
+        <p style="margin: 0; line-height: 1.6; font-size: 0.88rem; color: #334155;">
+          Afin de mesurer la fréquentation du site de façon éthique et sans atteinte à la vie privée, l'Observatoire utilise l'outil de statistiques anonyme et souverain <strong>Umami Analytics</strong>. Ce script fonctionne intégralement sans aucun cookie de suivi et sans collecter de données personnelles. Il s'exécute <strong>exclusivement lors de la consultation du site officiel</strong> (<code>observatoire-votes.fr</code>) et reste totalement désactivé lors d'une exécution locale depuis le dépôt GitHub (serveur Python local, localhost).
+        </p>
+        <p style="margin: 0.45rem 0 0 0; font-size: 0.85rem; color: #64748b;">
+          Pour le détail complet des données transmises et de celles strictement non collectées, consultez les <button type="button" class="inline-legal-link" onclick="closeMethodologyModal(); openMentionsModal();">Mentions légales ↗</button>.
+        </p>
+      </div>
+
     </div>
     <div class="modal-footer">
       <span style="font-size: 0.8rem; color: #64748b;">Source : data.assemblee-nationale.fr</span>
@@ -1315,6 +1325,82 @@
   </div>
 </div>
 
+<!-- MODALE : MENTIONS LÉGALES -->
+<div class="modal-backdrop" id="mentionsModal" onclick="closeMentionsModalOnBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="mentionsModalTitle">
+  <div class="modal-box" style="max-width: 660px;">
+    <div class="modal-header">
+      <div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Cadre réglementaire &amp; Transparence</div>
+        <h3 class="modal-title" id="mentionsModalTitle" style="font-size: 1.15rem; margin-top: 0.2rem;">⚖️ Mentions Légales</h3>
+      </div>
+      <button type="button" class="modal-close-btn" onclick="closeMentionsModal()" title="Fermer la fenêtre (Échap)">×</button>
+    </div>
+    <div class="modal-body" style="font-size: 0.88rem; line-height: 1.6; color: var(--text-secondary, #475569);">
+      
+      <div style="margin-bottom: 1.1rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary, #0f172a); margin-bottom: 0.35rem;">1. Éditeur du site</h4>
+        <p style="margin: 0;">
+          Ce site est un projet civique indépendant et non professionnel, édité à titre individuel et bénévole.<br>
+          Conformément à l’article 6, III, 2 de la loi n° 2004-575 du 21 juin 2004 (LCEN), l'auteur préserve son anonymat. Ses éléments d'identification personnelle ont été valablement transmis aux prestataires techniques d'hébergement.<br>
+          <strong>Contact :</strong> <span style="font-family: monospace;">contact@observatoire-votes.fr</span>
+        </p>
+      </div>
+
+      <div style="margin-bottom: 1.1rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary, #0f172a); margin-bottom: 0.35rem;">2. Hébergement &amp; Domaine</h4>
+        <p style="margin: 0;">
+          <strong>Hébergement de la plateforme :</strong><br>
+          GitHub Pages – GitHub Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis.<br>
+          <span style="font-size: 0.8rem; color: #64748b;">(Assistance : support.github.com)</span>
+        </p>
+        <p style="margin: 0.4rem 0 0 0;">
+          <strong>Nom de domaine et gestion DNS :</strong><br>
+          OVH SAS – 2 rue Kellermann, 59100 Roubaix, France.<br>
+          <span style="font-size: 0.8rem; color: #64748b;">(Assistance : ovhcloud.com)</span>
+        </p>
+      </div>
+
+      <div style="margin-bottom: 1.1rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary, #0f172a); margin-bottom: 0.35rem;">3. Données ouvertes &amp; Propriété intellectuelle</h4>
+        <p style="margin: 0;">
+          Les données relatives aux scrutins, votes et députés proviennent des données publiques ouvertes fournies par l'<strong>Assemblée nationale</strong> (<code>data.assemblee-nationale.fr</code>) sous <strong>Licence Ouverte v2.0 (Etalab)</strong>.<br>
+          Le code source et les représentations graphiques sont mis à disposition dans un but d'information citoyenne et de transparence démocratique.
+        </p>
+      </div>
+
+      <div>
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary, #0f172a); margin-bottom: 0.35rem;">4. Données personnelles &amp; Mesure d'audience (Umami Analytics)</h4>
+        <p style="margin: 0;">
+          Le site utilise l'outil d'analyse d'audience libre et respectueux de la vie privée <strong>Umami Analytics</strong>. Conforme aux recommandations de la CNIL et exempté de consentement préalable (sans bandeau de cookies intrusif) :
+        </p>
+        <div style="margin: 0.6rem 0 0 0; padding: 0.75rem 0.9rem; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div style="font-weight: 600; color: #16a34a; margin-bottom: 0.3rem;">✓ Données anonymes collectées à des fins purement statistiques :</div>
+          <ul style="margin: 0 0 0.6rem 1.2rem; padding: 0; line-height: 1.5;">
+            <li>Pages consultées et URL de provenance (référent HTTP)</li>
+            <li>Type d'appareil, navigateur et résolution d'écran</li>
+            <li>Pays d'origine et langue configurée</li>
+          </ul>
+          <div style="font-weight: 600; color: #dc2626; margin-bottom: 0.3rem;">✗ Données NON collectées / strictement exclues :</div>
+          <ul style="margin: 0 0 0 1.2rem; padding: 0; line-height: 1.5;">
+            <li><strong>Aucun cookie traceur</strong> déposé sur votre terminal</li>
+            <li><strong>Aucune adresse IP conservée</strong> (anonymisation complète)</li>
+            <li><strong>Aucune donnée personnelle nominative</strong> collectée</li>
+            <li><strong>Aucun profilage inter-sites</strong> ni partage ou revente à des tiers publicitaires</li>
+          </ul>
+        </div>
+        <p style="margin: 0.7rem 0 0 0; font-size: 0.83rem; color: #64748b; line-height: 1.5;">
+          <strong>Périmètre d'exécution :</strong> Le script d'analyse Umami est strictement circonscrit au nom de domaine officiel (<code>observatoire-votes.fr</code>). En cas d'utilisation ou d'audit du projet via le dépôt GitHub (notamment lors d'un lancement en local via un serveur Python <code>http.server</code>, sur <code>localhost</code> ou en protocole fichier), le script est automatiquement désactivé et ne se charge pas.
+        </p>
+      </div>
+
+    </div>
+    <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 0.8rem; color: #64748b;">Conforme LCEN &amp; RGPD</span>
+      <button type="button" class="btn btn-secondary" onclick="closeMentionsModal()">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- FOOTER CITOYEN UNIFIÉ -->
 <footer class="site-footer">
   <div class="footer-inner">
@@ -1367,7 +1453,7 @@
   </div>
 
   <div class="footer-bottom">
-    © Observatoire des Votes Parlementaires • Tous droits réservés • Données officielles ouvertes de l'Assemblée nationale
+    © Observatoire des Votes Parlementaires • Tous droits réservés • <button type="button" class="footer-legal-link" onclick="openMentionsModal()">Mentions légales</button> • Données officielles ouvertes de l'Assemblée nationale
   </div>
 </footer>
 

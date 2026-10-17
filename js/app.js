@@ -1436,6 +1436,31 @@ function closeMethodologyModalOnBackdrop(event) {
   }
 }
 
+// Gestion de la modale Mentions Légales
+function openMentionsModal() {
+  const m = document.getElementById('mentionsModal');
+  if (m) {
+    m.classList.add('active');
+    m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeMentionsModal() {
+  const m = document.getElementById('mentionsModal');
+  if (m) {
+    m.classList.remove('active');
+    m.style.display = '';
+    document.body.style.overflow = '';
+  }
+}
+
+function closeMentionsModalOnBackdrop(event) {
+  if (event && event.target && event.target.id === 'mentionsModal') {
+    closeMentionsModal();
+  }
+}
+
 // Rendre accessible globalement avec alias
 window.openGuideModal = openGuideModal;
 window.closeGuideModal = closeGuideModal;
@@ -1445,6 +1470,9 @@ window.closeDefinitionsModal = closeGuideModal;
 window.openMethodologyModal = openMethodologyModal;
 window.closeMethodologyModal = closeMethodologyModal;
 window.closeMethodologyModalOnBackdrop = closeMethodologyModalOnBackdrop;
+window.openMentionsModal = openMentionsModal;
+window.closeMentionsModal = closeMentionsModal;
+window.closeMentionsModalOnBackdrop = closeMentionsModalOnBackdrop;
 
 // Fermeture avec la touche Échap
 window.addEventListener('keydown', (e) => {
@@ -1468,6 +1496,10 @@ window.addEventListener('keydown', (e) => {
     const coalModal = document.getElementById('coalitionsModal');
     if (coalModal && coalModal.classList.contains('active')) {
       closeCoalitionsModal();
+    }
+    const mentModal = document.getElementById('mentionsModal');
+    if (mentModal && mentModal.classList.contains('active')) {
+      closeMentionsModal();
     }
   }
 });
